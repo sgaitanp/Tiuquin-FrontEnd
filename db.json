@@ -1,0 +1,35 @@
+{
+  "users": [
+    {
+      "id": "USR-003",
+      "name": "Marcus Bell",
+      "type": "FIELD_CREW_MEMBER",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "USR-002",
+      "name": "Sofia Reyes",
+      "type": "PROJECT_MANAGER",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "USR-001",
+      "name": "Clara Dubs",
+      "type": "PLATFORM_OPERATOR",
+      "status": "ACTIVE"
+    }
+  ],
+  "templates": [],
+  "projects": [
+    {
+      "id": "PRJ-002",
+      "name": "Brickell Tower Renovation",
+      "client": "CoolFlow Systems"
+    },
+    {
+      "id": "PRJ-001",
+      "name": "dsadsa",
+      "client": "sadasdsa"
+    }
+  ]
+}
