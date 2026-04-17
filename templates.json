@@ -1066,5 +1066,213 @@
         ]
       }
     ]
+  },
+  {
+    "id": "template-1776100360625",
+    "groupId": "grp-1776100360625",
+    "name": "Test Template",
+    "version": "1.0",
+    "status": "IN_REVISION",
+    "createdAt": "2026-04-13T17:12:40.625Z",
+    "sections": [
+      {
+        "id": "sec-j7q7ef1",
+        "name": "First Section",
+        "order": 1,
+        "questions": [
+          {
+            "id": "q-s3pszh5",
+            "text": "How are you",
+            "type": "single_select",
+            "order": 1,
+            "isFollowUp": false,
+            "options": [
+              {
+                "id": "a-nm44mwt",
+                "text": "Good",
+                "followUpQuestionId": null
+              },
+              {
+                "id": "a-0ftdhyx",
+                "text": "Bad",
+                "followUpQuestionId": null
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "template-1776196918806",
+    "groupId": "grp-1776196918806",
+    "name": "Prueba en vivo",
+    "version": "1.0",
+    "status": "IN_REVISION",
+    "createdAt": "2026-04-14T20:01:58.806Z",
+    "sections": [
+      {
+        "id": "sec-0s97w73",
+        "name": "Prueba en vivo",
+        "order": 1,
+        "questions": [
+          {
+            "id": "q-kebr2lh",
+            "text": "Como estas",
+            "type": "single_select",
+            "order": 1,
+            "isFollowUp": false,
+            "options": [
+              {
+                "id": "a-59s9kxv",
+                "text": "Bien ",
+                "followUpQuestionId": null
+              },
+              {
+                "id": "a-ifp2ndi",
+                "text": "Mal",
+                "followUpQuestionId": null
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "template-1776197693461",
+    "groupId": "grp-1776197693460",
+    "name": "Template Miami",
+    "version": "1.0",
+    "status": "IN_REVISION",
+    "createdAt": "2026-04-14T20:14:53.461Z",
+    "sections": [
+      {
+        "id": "sec-b10h2ku",
+        "name": "Section Roof",
+        "order": 1,
+        "questions": [
+          {
+            "id": "q-io1tmtk",
+            "text": "Hola como estas",
+            "type": "single_select",
+            "order": 1,
+            "isFollowUp": false,
+            "options": [
+              {
+                "id": "a-qlpbi30",
+                "text": "Bien",
+                "followUpQuestionId": null
+              },
+              {
+                "id": "a-jzhqpnb",
+                "text": "Mal",
+                "followUpQuestionId": null
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "template-1776263575967",
+    "groupId": "grp-1776263575967",
+    "name": "File Test",
+    "version": "1.0",
+    "status": "IN_REVISION",
+    "createdAt": "2026-04-15T14:32:55.967Z",
+    "sections": [
+      {
+        "id": "sec-h1yi7jx",
+        "name": "New Section",
+        "order": 1,
+        "questions": [
+          {
+            "id": "q-e81d1ph",
+            "text": "Upload floor plan",
+            "type": "file",
+            "order": 1,
+            "isFollowUp": false,
+            "options": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "template-1776298480307",
+    "groupId": "grp-1776298480307",
+    "name": "Miami File",
+    "version": "1.0",
+    "status": "IN_REVISION",
+    "createdAt": "2026-04-16T00:14:40.307Z",
+    "sections": [
+      {
+        "id": "sec-2rtevm4",
+        "name": "New Section",
+        "order": 1,
+        "questions": [
+          {
+            "id": "q-dvh8sc4",
+            "text": "Upload File",
+            "type": "file",
+            "order": 1,
+            "isFollowUp": false,
+            "options": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "template-1776348883059",
+    "groupId": "grp-1776348883059",
+    "name": "Miami File",
+    "version": "1.0",
+    "status": "IN_REVISION",
+    "createdAt": "2026-04-16T14:14:43.059Z",
+    "sections": [
+      {
+        "id": "sec-tyyo94w",
+        "name": "New Section",
+        "order": 1,
+        "questions": [
+          {
+            "id": "q-89nhwiq",
+            "text": "Upload File",
+            "type": "file",
+            "order": 1,
+            "isFollowUp": false,
+            "options": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "template-1776457461051",
+    "groupId": "grp-1776457461051",
+    "name": "Test",
+    "version": "1.0",
+    "status": "IN_REVISION",
+    "createdAt": "2026-04-17T20:24:21.051Z",
+    "sections": [
+      {
+        "id": "b89a2190-90f4-4424-98df-245422cad31b",
+        "name": "New Section",
+        "order": 1,
+        "questions": [
+          {
+            "id": "9d8d6671-1849-4314-aaae-8b362625154a",
+            "text": "Upload File",
+            "type": "file",
+            "order": 1,
+            "isFollowUp": false,
+            "options": null
+          }
+        ]
+      }
+    ]
   }
 ]

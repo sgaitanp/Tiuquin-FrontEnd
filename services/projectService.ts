@@ -2,6 +2,7 @@ const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080/api/v1';
 
 function getToken(): string {
+  if (typeof window === 'undefined') return '';
   return sessionStorage.getItem('token') ?? '';
 }
 
@@ -10,6 +11,16 @@ function authHeaders() {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${getToken()}`,
   };
+}
+
+export async function getSiteSurveyFiles(siteSurveyId: string) {
+  const res = await fetch(`${API_BASE}/site-surveys/${siteSurveyId}/files`, {
+    headers: authHeaders(),
+    cache: 'no-store',
+  });
+  if (!res.ok)
+    throw new Error(`Failed to fetch site survey files (${res.status})`);
+  return res.json();
 }
 
 export async function getSiteSurveyWorkOrder(siteSurveyId: string) {
@@ -96,24 +107,38 @@ export async function createSiteSurvey(projectId: string, survey: any) {
   }
   const workOrder = await woRes.json();
 
-  // Step 2 — create site survey
+  // Step 2 — create site survey (multipart with optional files)
+  const siteSurveyData = {
+    name: survey.name,
+    status: survey.status ?? 'PLANNED',
+    scheduledDate: survey.scheduledDate,
+    location: {
+      ...survey.location,
+      latitude: survey.latitude ?? null,
+      longitude: survey.longitude ?? null,
+    },
+    contact: survey.contact,
+    templateId: survey.templateId ?? null,
+  };
+
+  const formData = new FormData();
+  formData.append(
+    'siteSurvey',
+    new Blob([JSON.stringify(siteSurveyData)], { type: 'application/json' }),
+  );
+
+  const surveyFiles: File[] = (survey as any).files ?? [];
+  surveyFiles.forEach((file: File) => {
+    const key = crypto.randomUUID();
+    formData.append(key, file);
+  });
+
   const ssRes = await fetch(
     `${API_BASE}/projects/${projectId}/work-orders/${workOrder.id}/site-surveys`,
     {
       method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({
-        name: survey.name,
-        status: survey.status ?? 'PLANNED',
-        scheduledDate: survey.scheduledDate,
-        location: {
-          ...survey.location,
-          latitude: survey.latitude ?? null,
-          longitude: survey.longitude ?? null,
-        },
-        contact: survey.contact,
-        templateId: survey.templateId ?? null,
-      }),
+      headers: { Authorization: `Bearer ${getToken()}` },
+      body: formData,
     },
   );
   if (!ssRes.ok) {

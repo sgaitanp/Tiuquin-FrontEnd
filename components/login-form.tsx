@@ -1,65 +1,75 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1"
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080/api/v1';
 
-export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
-  const router = useRouter()
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const [loading,  setLoading]  = useState(false)
-  const [error,    setError]    = useState("")
+export function LoginForm({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) {
+  const router = useRouter();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
-    e.preventDefault()
-    if (!username.trim()) { setError("Username is required."); return }
-    if (!password.trim()) { setError("Password is required."); return }
-    setError("")
-    setLoading(true)
+    e.preventDefault();
+    if (!username.trim()) {
+      setError('Username is required.');
+      return;
+    }
+    if (!password.trim()) {
+      setError('Password is required.');
+      return;
+    }
+    setError('');
+    setLoading(true);
 
     try {
       const res = await fetch(`${API_BASE}/users/login`, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ userId: username.trim(), password }),
-      })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: username.trim(), password }),
+      });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        setError(body?.message ?? "Invalid credentials.")
-        setLoading(false)
-        return
+        const body = await res.json().catch(() => ({}));
+        setError(body?.message ?? 'Invalid credentials.');
+        setLoading(false);
+        return;
       }
 
-      const data = await res.json()
+      const data = await res.json();
 
       if (!data.success) {
-        setError(data.message ?? "Login failed.")
-        setLoading(false)
-        return
+        setError(data.message ?? 'Login failed.');
+        setLoading(false);
+        return;
       }
 
       // Save token and user to sessionStorage
-      sessionStorage.setItem("token",       data.token)
-      sessionStorage.setItem("currentUser", JSON.stringify(data.user))
+      sessionStorage.setItem('token', data.token);
+      sessionStorage.setItem('currentUser', JSON.stringify(data.user));
 
-      router.push("/dashboard/projects")
+      router.push('/dashboard');
     } catch (e: any) {
-      setError(e?.message ?? "Something went wrong. Please try again.")
+      setError(e?.message ?? 'Something went wrong. Please try again.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card className="overflow-hidden p-0">
         <CardContent className="grid p-0 md:grid-cols-2">
           <form className="p-6 md:p-8" onSubmit={handleSubmit}>
@@ -78,7 +88,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                   type="text"
                   placeholder="Enter your username or ID"
                   value={username}
-                  onChange={e => setUsername(e.target.value)}
+                  onChange={(e) => setUsername(e.target.value)}
                   disabled={loading}
                   required
                 />
@@ -87,7 +97,10 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
-                  <a href="#" className="ml-auto text-sm underline-offset-2 hover:underline text-muted-foreground">
+                  <a
+                    href="#"
+                    className="ml-auto text-sm underline-offset-2 hover:underline text-muted-foreground"
+                  >
                     Forgot your password?
                   </a>
                 </div>
@@ -95,7 +108,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                   id="password"
                   type="password"
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
                 />
               </div>
@@ -103,11 +116,14 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
               {error && <p className="text-sm text-destructive">{error}</p>}
 
               <Button type="submit" disabled={loading} className="w-full">
-                {loading ? "Signing in…" : "Login"}
+                {loading ? 'Signing in…' : 'Login'}
               </Button>
 
               <p className="text-center text-sm text-muted-foreground">
-                Don&apos;t have an account? <a href="#" className="underline underline-offset-4">Sign up</a>
+                Don&apos;t have an account?{' '}
+                <a href="#" className="underline underline-offset-4">
+                  Sign up
+                </a>
               </p>
             </div>
           </form>
@@ -123,11 +139,16 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
       </Card>
 
       <p className="px-6 text-center text-sm text-muted-foreground">
-        By clicking continue, you agree to our{" "}
-        <a href="#" className="underline underline-offset-4">Terms of Service</a>{" "}
-        and{" "}
-        <a href="#" className="underline underline-offset-4">Privacy Policy</a>.
+        By clicking continue, you agree to our{' '}
+        <a href="#" className="underline underline-offset-4">
+          Terms of Service
+        </a>{' '}
+        and{' '}
+        <a href="#" className="underline underline-offset-4">
+          Privacy Policy
+        </a>
+        .
       </p>
     </div>
-  )
+  );
 }

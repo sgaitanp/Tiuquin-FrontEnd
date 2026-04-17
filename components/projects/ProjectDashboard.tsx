@@ -990,6 +990,8 @@ function AddSurveyWizard({
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const mapPickerRef = useRef<LocationMapPickerRef>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const setW = (k: string, v: string) => {
     setWo((f) => ({ ...f, [k]: v }));
@@ -1038,6 +1040,15 @@ function AddSurveyWizard({
     }
     setStep(3);
   };
+
+  const stepTitles = ['Work Order', 'Survey Details', 'Template', 'Files'];
+  const stepSubtitles = [
+    `A work order is required before creating a survey for ${project.name}`,
+    'Work order ready. Fill in the survey details.',
+    'Optionally assign an approved template to this survey.',
+    'Optionally attach files to this site survey.',
+  ];
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     const crew = fieldCrewMembers.find((m) => m.id === srv.assignedTo) || {
@@ -1052,6 +1063,7 @@ function AddSurveyWizard({
       templateId: templateId || null,
       latitude: lat,
       longitude: lng,
+      files,
       location: {
         address: srv.address,
         city: srv.city,
@@ -1075,13 +1087,6 @@ function AddSurveyWizard({
     } as Omit<SiteSurvey, 'id'>);
     onClose();
   };
-
-  const stepTitles = ['Work Order', 'Survey Details', 'Template'];
-  const stepSubtitles = [
-    `A work order is required before creating a survey for ${project.name}`,
-    'Work order ready. Fill in the survey details.',
-    'Optionally assign an approved template to this survey.',
-  ];
 
   return (
     <Modal
@@ -1391,7 +1396,10 @@ function AddSurveyWizard({
 
       {step === 3 && (
         <form
-          onSubmit={handleSubmit}
+          onSubmit={(e) => {
+            e.preventDefault();
+            setStep(4);
+          }}
           noValidate
           style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
         >
@@ -1417,6 +1425,128 @@ function AddSurveyWizard({
           </div>
           <FooterBtns
             onBack={() => setStep(2)}
+            backLabel="Back"
+            submitLabel="Next"
+          />
+        </form>
+      )}
+
+      {step === 4 && (
+        <form
+          onSubmit={handleSubmit}
+          noValidate
+          style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
+        >
+          <div>
+            <SecLabel icon="attach_file" label="Attachments (optional)" />
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                border: '2px dashed #e2e8f0',
+                borderRadius: 10,
+                padding: '20px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                background: '#fafafa',
+              }}
+              onMouseEnter={(e) =>
+                ((e.currentTarget as HTMLElement).style.borderColor = '#0f172a')
+              }
+              onMouseLeave={(e) =>
+                ((e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0')
+              }
+            >
+              <Ms
+                icon="upload_file"
+                style={{
+                  fontSize: 28,
+                  color: '#94a3b8',
+                  display: 'block',
+                  margin: '0 auto 6px',
+                }}
+              />
+              <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
+                Click to upload files
+              </p>
+              <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>
+                PDF, PNG, JPG, or any document
+              </p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const picked = Array.from(e.target.files ?? []);
+                  setFiles((prev) => [...prev, ...picked]);
+                  e.target.value = '';
+                }}
+              />
+            </div>
+            {files.length > 0 && (
+              <div
+                style={{
+                  marginTop: 10,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                }}
+              >
+                {files.map((f, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      borderRadius: 8,
+                      border: '1px solid #e2e8f0',
+                      padding: '8px 12px',
+                      background: '#fff',
+                    }}
+                  >
+                    <Ms
+                      icon="description"
+                      style={{ fontSize: 16, color: '#64748b' }}
+                    />
+                    <span
+                      style={{
+                        fontSize: 12,
+                        color: '#374151',
+                        flex: 1,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {f.name}
+                    </span>
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                      {(f.size / 1024).toFixed(1)} KB
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFiles((prev) => prev.filter((_, j) => j !== i))
+                      }
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: '#94a3b8',
+                        padding: 0,
+                        display: 'flex',
+                      }}
+                    >
+                      <Ms icon="close" style={{ fontSize: 16 }} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <FooterBtns
+            onBack={() => setStep(3)}
             backLabel="Back"
             submitLabel="Create Survey"
           />
