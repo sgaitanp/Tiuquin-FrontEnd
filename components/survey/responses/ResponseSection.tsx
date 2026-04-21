@@ -178,6 +178,8 @@ function FileCard({ file }: { file: any }) {
 
 function QuestionCard({ qa }: { qa: any }) {
   const hasFiles = qa.files && qa.files.length > 0;
+  const hasGeo =
+    typeof qa.latitude === 'number' && typeof qa.longitude === 'number';
   const displayValue = qa.selectedOptionText ?? qa.inputValue;
 
   return (
@@ -232,7 +234,7 @@ function QuestionCard({ qa }: { qa: any }) {
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            marginBottom: hasFiles ? 10 : 0,
+            marginBottom: hasFiles || hasGeo ? 10 : 0,
           }}
         >
           <span
@@ -254,6 +256,37 @@ function QuestionCard({ qa }: { qa: any }) {
         </div>
       )}
 
+      {/* Geolocation */}
+      {hasGeo && (
+        <a
+          href={`https://www.google.com/maps/search/?api=1&query=${qa.latitude},${qa.longitude}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            background: '#f0fdf4',
+            border: '1px solid #bbf7d0',
+            borderRadius: 8,
+            padding: '8px 12px',
+            fontSize: 13,
+            color: '#0f766e',
+            textDecoration: 'none',
+            fontWeight: 500,
+            marginBottom: hasFiles ? 10 : 0,
+          }}
+        >
+          <span
+            className="material-symbols-outlined"
+            style={{ fontSize: 16, color: '#10b981' }}
+          >
+            location_on
+          </span>
+          Lat: {qa.latitude} · Lng: {qa.longitude}
+        </a>
+      )}
+
       {/* Files */}
       {hasFiles && (
         <div
@@ -270,7 +303,7 @@ function QuestionCard({ qa }: { qa: any }) {
       )}
 
       {/* No answer */}
-      {!displayValue && !hasFiles && (
+      {!displayValue && !hasFiles && !hasGeo && (
         <p
           style={{
             fontSize: 12,

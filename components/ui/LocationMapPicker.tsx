@@ -15,6 +15,7 @@ interface Props {
 
 export interface LocationMapPickerRef {
   searchAddress: (address: string) => void;
+  setLocation: (lat: number, lng: number) => void;
 }
 
 const LocationMapPicker = forwardRef<LocationMapPickerRef, Props>(
@@ -92,6 +93,13 @@ const LocationMapPicker = forwardRef<LocationMapPickerRef, Props>(
       searchAddress: (address: string) => {
         setQuery(address);
         geocode(address);
+      },
+      setLocation: (lat: number, lng: number) => {
+        const L = leafletRef.current;
+        const map = mapInstance.current;
+        if (!L || !map) return;
+        placeMarker(L, lat, lng);
+        map.setView([lat, lng], 16);
       },
     }));
 

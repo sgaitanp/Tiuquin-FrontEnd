@@ -22,7 +22,7 @@ export function StatusBadge({ status }: { status: string }) {
   )
 }
 
-export const QUESTION_TYPES = ['text', 'single_select', 'multi_select', 'file'] as const
+export const QUESTION_TYPES = ['text', 'single_select', 'multi_select', 'file', 'geolocation'] as const
 export type QuestionType = typeof QUESTION_TYPES[number]
 
 export const TYPE_CFG: Record<string, { label: string; icon: string; color: string }> = {
@@ -30,6 +30,19 @@ export const TYPE_CFG: Record<string, { label: string; icon: string; color: stri
   single_select: { label: 'Single Choice', icon: 'radio_button_checked', color: '#8b5cf6' },
   multi_select:  { label: 'Multi Select',  icon: 'checklist',     color: '#0ea5e9' },
   file:          { label: 'File Upload',   icon: 'upload_file',   color: '#f59e0b' },
+  geolocation:   { label: 'Geolocation',   icon: 'location_on',   color: '#10b981' },
+}
+
+export const ACCEPTED_FILE_TYPES = ['image', 'pdf', 'doc', 'excel', 'video', 'audio'] as const
+export type AcceptedFileType = typeof ACCEPTED_FILE_TYPES[number]
+
+export const FILE_TYPE_CFG: Record<AcceptedFileType, { label: string; icon: string; color: string }> = {
+  image: { label: 'Image', icon: 'image',          color: '#0ea5e9' },
+  pdf:   { label: 'PDF',   icon: 'picture_as_pdf', color: '#ef4444' },
+  doc:   { label: 'Doc',   icon: 'article',        color: '#2563eb' },
+  excel: { label: 'Excel', icon: 'table_chart',    color: '#16a34a' },
+  video: { label: 'Video', icon: 'videocam',       color: '#8b5cf6' },
+  audio: { label: 'Audio', icon: 'graphic_eq',     color: '#f59e0b' },
 }
 
 export const inp = (err = false): React.CSSProperties => ({

@@ -3,6 +3,19 @@ import { Ms } from './shared'
 export default function ResponseAnswer({ question }: { question: any }) {
   const { type, displayValue } = question
 
+  if (type === 'geolocation' && displayValue) {
+    return (
+      <a
+        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayValue)}`}
+        target='_blank'
+        rel='noopener noreferrer'
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#0f766e', textDecoration: 'none', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 7, padding: '5px 10px' }}>
+        <Ms icon='location_on' style={{ fontSize: 14, color: '#10b981' }} />
+        {displayValue}
+      </a>
+    )
+  }
+
   if (type === 'file' && displayValue) {
     const filename = displayValue.split('/').pop()
     return (

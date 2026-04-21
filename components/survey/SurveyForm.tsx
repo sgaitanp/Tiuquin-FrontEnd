@@ -5,6 +5,16 @@ import TextQuestion         from "./questions/TextQuestion"
 import SingleSelectQuestion from "./questions/SingleSelectQuestion"
 import MultiSelectQuestion  from "./questions/MultiSelectQuestion"
 import FileQuestion         from "./questions/FileQuestion"
+import GeoLocationQuestion  from "./questions/GeoLocationQuestion"
+
+// Treat geolocation values (objects with lat/lng) as "answered"
+const isAnswered = (v: any) => {
+  if (v === null || v === undefined) return false
+  if (Array.isArray(v)) return v.length > 0
+  if (typeof v === 'object')
+    return typeof v.latitude === 'number' && typeof v.longitude === 'number'
+  return String(v).trim().length > 0
+}
 
 const Ms = ({ icon, style = {} }: { icon: string; style?: React.CSSProperties }) => (
   <span className="material-symbols-outlined" style={{ fontSize: 18, lineHeight: 1, verticalAlign: "middle", ...style }}>{icon}</span>
@@ -56,9 +66,7 @@ export default function SurveyForm({ survey, template, onResponsesChange, onSubm
 
   const pct        = completionOf(template, responses)
   const currentSec = template.sections.find((s: any) => s.id === activeSection)
-  const secDone    = (sec: any) => sec.questions.filter((q: any) => !q.isFollowUp).every((q: any) => {
-    const v = responses[q.id]; if (!v) return false; if (Array.isArray(v)) return v.length > 0; return String(v).trim().length > 0
-  })
+  const secDone    = (sec: any) => sec.questions.filter((q: any) => !q.isFollowUp).every((q: any) => isAnswered(responses[q.id]))
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -120,7 +128,8 @@ export default function SurveyForm({ survey, template, onResponsesChange, onSubm
                   {q.type === "text"          && <TextQuestion         value={responses[q.id]}       onChange={v => setAnswer(q.id, v)} />}
                   {q.type === "single_select" && <SingleSelectQuestion question={q} value={responses[q.id] || ''} onChange={v => setAnswer(q.id, v)} />}
                   {q.type === "multi_select"  && <MultiSelectQuestion  question={q} value={responses[q.id] || []} onChange={v => setAnswer(q.id, v)} />}
-                  {q.type === "file"          && <FileQuestion         value={responses[q.id] || []} onChange={v => setAnswer(q.id, v)} />}
+                  {q.type === "file"          && <FileQuestion         value={responses[q.id] || []} onChange={v => setAnswer(q.id, v)} acceptedFileType={q.acceptedFileType} />}
+                  {q.type === "geolocation"   && <GeoLocationQuestion  value={responses[q.id] ?? null} onChange={v => setAnswer(q.id, v)} />}
                 </div>
               )
             })}

@@ -1,5 +1,70 @@
 import { useState, useEffect, useRef } from 'react';
-import { Ms, TYPE_CFG, QUESTION_TYPES, inp } from './shared';
+import {
+  Ms,
+  TYPE_CFG,
+  QUESTION_TYPES,
+  ACCEPTED_FILE_TYPES,
+  FILE_TYPE_CFG,
+  inp,
+} from './shared';
+
+// ── Accepted-file-type picker (shared between main q and file follow-ups) ────
+function FileTypePicker({
+  value,
+  onChange,
+  error,
+}: {
+  value: string | null;
+  onChange: (v: string) => void;
+  error?: boolean;
+}) {
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 6,
+      }}
+    >
+      {ACCEPTED_FILE_TYPES.map((ft) => {
+        const cfg = FILE_TYPE_CFG[ft];
+        const active = value === ft;
+        return (
+          <button
+            key={ft}
+            type="button"
+            onClick={() => onChange(ft)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 5,
+              padding: '7px 8px',
+              borderRadius: 8,
+              border: `1.5px solid ${
+                active ? cfg.color : error ? '#ef4444' : '#e2e8f0'
+              }`,
+              background: active ? `${cfg.color}10` : '#fff',
+              cursor: 'pointer',
+              fontSize: 11,
+              fontWeight: 600,
+              color: active ? cfg.color : '#64748b',
+            }}
+          >
+            <Ms
+              icon={cfg.icon}
+              style={{
+                fontSize: 14,
+                color: active ? cfg.color : '#94a3b8',
+              }}
+            />
+            {cfg.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 const overlay: React.CSSProperties = {
   position: 'fixed',
@@ -53,12 +118,13 @@ function OptionRow({
       text: string;
       followUpText: string;
       followUpType: string;
+      followUpAcceptedFileType: string | null;
       hasFollowUp: boolean;
     }>,
   ) => void;
   onRemove: (id: string) => void;
 }) {
-  const followUpTypes = ['text', 'file'] as const;
+  const followUpTypes = ['text', 'file', 'geolocation'] as const;
 
   return (
     <div
@@ -207,7 +273,15 @@ function OptionRow({
               return (
                 <button
                   key={t}
-                  onClick={() => onUpdate(option.id, { followUpType: t })}
+                  onClick={() =>
+                    onUpdate(option.id, {
+                      followUpType: t,
+                      // Clear accepted file type when leaving 'file'
+                      ...(t !== 'file'
+                        ? { followUpAcceptedFileType: null }
+                        : {}),
+                    })
+                  }
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -234,6 +308,23 @@ function OptionRow({
               );
             })}
           </div>
+
+          {option.followUpType === 'file' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label
+                style={{ fontSize: 11, fontWeight: 600, color: '#16a34a' }}
+              >
+                Accepted file type *
+              </label>
+              <FileTypePicker
+                value={option.followUpAcceptedFileType ?? null}
+                onChange={(v) =>
+                  onUpdate(option.id, { followUpAcceptedFileType: v })
+                }
+                error={error && !option.followUpAcceptedFileType}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -369,6 +460,9 @@ export default function QuestionModal({
 }) {
   const [text, setText] = useState(question?.text ?? '');
   const [type, setType] = useState(question?.type ?? 'text');
+  const [acceptedFileType, setAcceptedFileType] = useState<string | null>(
+    question?.acceptedFileType ?? null,
+  );
   const [options, setOptions] = useState<any[]>(() => {
     if (!question?.options) return [];
     // Hydrate existing follow-up data from the section if present
@@ -377,6 +471,7 @@ export default function QuestionModal({
       hasFollowUp: !!o.followUpQuestionId,
       followUpText: o._followUpText ?? '',
       followUpType: o._followUpType ?? 'text',
+      followUpAcceptedFileType: o._followUpAcceptedFileType ?? null,
     }));
   });
   const [errors, setErrors] = useState<Record<string, boolean>>({});
@@ -384,6 +479,7 @@ export default function QuestionModal({
   useEffect(() => {
     setText(question?.text ?? '');
     setType(question?.type ?? 'text');
+    setAcceptedFileType(question?.acceptedFileType ?? null);
     setOptions(
       question?.options
         ? question.options.map((o: any) => ({
@@ -391,11 +487,18 @@ export default function QuestionModal({
             hasFollowUp: !!o.followUpQuestionId,
             followUpText: o._followUpText ?? '',
             followUpType: o._followUpType ?? 'text',
+            followUpAcceptedFileType: o._followUpAcceptedFileType ?? null,
           }))
         : [],
     );
     setErrors({});
   }, [question]);
+
+  // Reset acceptedFileType whenever the main type changes away from file
+  const handleSetType = (t: string) => {
+    setType(t);
+    if (t !== 'file') setAcceptedFileType(null);
+  };
 
   const addOption = () =>
     setOptions((o) => [
@@ -407,6 +510,7 @@ export default function QuestionModal({
         hasFollowUp: false,
         followUpText: '',
         followUpType: 'text',
+        followUpAcceptedFileType: null,
       },
     ]);
 
@@ -419,6 +523,7 @@ export default function QuestionModal({
   const validate = () => {
     const e: Record<string, boolean> = {};
     if (!text.trim()) e.text = true;
+    if (type === 'file' && !acceptedFileType) e.acceptedFileType = true;
     if (
       (type === 'multi_select' || type === 'single_select') &&
       options.length < 2
@@ -427,6 +532,13 @@ export default function QuestionModal({
     if (type === 'multi_select' || type === 'single_select') {
       options.forEach((o, i) => {
         if (!o.text.trim()) e[`opt-${i}`] = true;
+        if (
+          o.hasFollowUp &&
+          o.followUpType === 'file' &&
+          !o.followUpAcceptedFileType
+        ) {
+          e[`opt-${i}`] = true;
+        }
       });
     }
     setErrors(e);
@@ -445,15 +557,18 @@ export default function QuestionModal({
           if (!o.hasFollowUp)
             return { id: o.id, text: o.text, followUpQuestionId: null };
           const fqId = o.followUpQuestionId ?? uid();
+          const fuType = o.followUpType ?? 'text';
           followUps.push({
             id: fqId,
             text:
               o.followUpText?.trim() ||
               `Please provide more details about "${o.text}"`,
-            type: o.followUpType ?? 'text',
+            type: fuType,
             order: 999,
             isFollowUp: true,
             options: null,
+            acceptedFileType:
+              fuType === 'file' ? (o.followUpAcceptedFileType ?? null) : null,
           });
           return { id: o.id, text: o.text, followUpQuestionId: fqId };
         })
@@ -466,6 +581,7 @@ export default function QuestionModal({
       order: question?.order ?? 999,
       isFollowUp: question?.isFollowUp ?? false,
       options: builtOptions,
+      acceptedFileType: type === 'file' ? acceptedFileType : null,
     };
 
     onSave({ question: q, followUps });
@@ -545,7 +661,7 @@ export default function QuestionModal({
               return (
                 <button
                   key={t}
-                  onClick={() => setType(t)}
+                  onClick={() => handleSetType(t)}
                   style={{
                     flex: 1,
                     display: 'flex',
@@ -580,6 +696,33 @@ export default function QuestionModal({
             })}
           </div>
         </div>
+
+        {/* Accepted file type — only for file questions */}
+        {type === 'file' && (
+          <div style={{ marginBottom: 16 }}>
+            <label
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#374151',
+                display: 'block',
+                marginBottom: 5,
+              }}
+            >
+              Accepted File Type *
+            </label>
+            <FileTypePicker
+              value={acceptedFileType}
+              onChange={setAcceptedFileType}
+              error={!!errors.acceptedFileType}
+            />
+            {errors.acceptedFileType && (
+              <p style={{ fontSize: 11, color: '#ef4444', margin: '4px 0 0' }}>
+                Required
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Options */}
         {(type === 'multi_select' || type === 'single_select') && (

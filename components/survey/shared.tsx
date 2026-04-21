@@ -30,8 +30,10 @@ export function completionOf(template: any, responses: any) {
   if (!primary.length) return 0
   const answered = primary.filter((q: any) => {
     const v = responses[q.id]
-    if (!v) return false
+    if (v === null || v === undefined) return false
     if (Array.isArray(v)) return v.length > 0
+    if (typeof v === 'object')
+      return typeof v.latitude === 'number' && typeof v.longitude === 'number'
     return String(v).trim().length > 0
   }).length
   return Math.round((answered / primary.length) * 100)

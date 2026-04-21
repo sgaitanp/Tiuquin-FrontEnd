@@ -1274,5 +1274,231 @@
         ]
       }
     ]
+  },
+  {
+    "id": "template-1776460125962",
+    "groupId": "grp-1776460125962",
+    "name": "Prueba en vivo",
+    "version": "1.0",
+    "status": "IN_REVISION",
+    "createdAt": "2026-04-17T21:08:45.962Z",
+    "sections": [
+      {
+        "id": "d0051ff8-dbe8-43bd-a540-2e2be8e4de76",
+        "name": "File Section",
+        "order": 1,
+        "questions": [
+          {
+            "id": "13522978-b326-485a-9a8c-8cf42f61c076",
+            "text": "Upload File",
+            "type": "file",
+            "order": 1,
+            "isFollowUp": false,
+            "options": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "template-1776460165562",
+    "groupId": "grp-1776460165562",
+    "name": "Prueba 2",
+    "version": "1.0",
+    "status": "IN_DESIGN",
+    "createdAt": "2026-04-17T21:09:25.562Z",
+    "sections": []
+  },
+  {
+    "id": "template-1776463094261",
+    "groupId": "grp-1776463094261",
+    "name": "Purbea en vivo 2.0",
+    "version": "1.0",
+    "status": "IN_REVISION",
+    "createdAt": "2026-04-17T21:58:14.261Z",
+    "sections": [
+      {
+        "id": "1b77370f-64e0-47de-be67-5a5f7f5428e5",
+        "name": "New Section",
+        "order": 1,
+        "questions": [
+          {
+            "id": "8c69cdf7-4793-4dfb-be9a-70f65b9226bb",
+            "text": "Is the rooftop access restricted",
+            "type": "single_select",
+            "order": 1,
+            "isFollowUp": false,
+            "options": [
+              {
+                "id": "22934fd0-4efd-4958-9e5c-a7947c3b493e",
+                "text": "yes",
+                "followUpQuestionId": null
+              },
+              {
+                "id": "cc93bf32-a133-4fb1-bdb0-63c28d1258c9",
+                "text": "no",
+                "followUpQuestionId": null
+              }
+            ]
+          },
+          {
+            "id": "60341d69-a258-4c36-a522-d15e682ad77b",
+            "text": "What is the rooftop surface",
+            "type": "single_select",
+            "order": 2,
+            "isFollowUp": false,
+            "options": [
+              {
+                "id": "eabf5819-1fa0-461c-99a3-7f8e65a79326",
+                "text": "Concrete",
+                "followUpQuestionId": null
+              },
+              {
+                "id": "64d54645-23e1-4b12-8e50-9d572f51e161",
+                "text": "gravel",
+                "followUpQuestionId": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "850f4c43-6db0-4f55-ba03-59f21acc0cb1",
+        "name": "Second Section test",
+        "order": 2,
+        "questions": [
+          {
+            "id": "72355152-d1ed-4619-b4e9-58335da30915",
+            "text": "Estimated Wind Load",
+            "type": "single_select",
+            "order": 1,
+            "isFollowUp": false,
+            "options": [
+              {
+                "id": "7c92b880-125a-4fe6-8b29-de5ef77016f4",
+                "text": "90-100 KPH",
+                "followUpQuestionId": null
+              },
+              {
+                "id": "ee6f0624-2e30-4b69-81b4-1543bc04e51f",
+                "text": "100+",
+                "followUpQuestionId": null
+              }
+            ]
+          },
+          {
+            "id": "58275924-1098-430a-8156-81a6688190af",
+            "text": "Which structural materials are present",
+            "type": "multi_select",
+            "order": 2,
+            "isFollowUp": false,
+            "options": [
+              {
+                "id": "cf6c011d-f2c4-4f8d-88eb-134ad500d9a7",
+                "text": "Steel",
+                "followUpQuestionId": null
+              },
+              {
+                "id": "037b2950-70ef-48c5-a819-0bd6b161d657",
+                "text": "Wood",
+                "followUpQuestionId": null
+              },
+              {
+                "id": "ba8a4a1a-bb45-40d4-ba0d-93938163f951",
+                "text": "Concrete",
+                "followUpQuestionId": null
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "template-1776786824848",
+    "groupId": "grp-1776786824848",
+    "name": "Test 123",
+    "version": "1.0",
+    "status": "IN_REVISION",
+    "createdAt": "2026-04-21T15:53:44.848Z",
+    "sections": [
+      {
+        "id": "d4d21737-afe5-4b9a-8dc8-81d8a401050c",
+        "name": "New Section",
+        "order": 1,
+        "questions": [
+          {
+            "id": "a69e3c04-d3c8-4306-bc80-f9ec631863ab",
+            "text": "Test 123",
+            "type": "file",
+            "order": 1,
+            "isFollowUp": false,
+            "options": null,
+            "acceptedFileType": "pdf"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "template-1776790308710",
+    "groupId": "grp-1776790308710",
+    "name": "SDSAASDASDSA",
+    "version": "1.0",
+    "status": "IN_DESIGN",
+    "createdAt": "2026-04-21T16:51:48.710Z",
+    "sections": [
+      {
+        "id": "12a98257-9ea9-4e74-9626-30d09682c3b1",
+        "name": "New Section",
+        "order": 1,
+        "questions": [
+          {
+            "id": "8b1da59a-f258-492a-94af-ed2040e3e96f",
+            "text": "Add Location",
+            "type": "geolocation",
+            "order": 1,
+            "isFollowUp": false,
+            "options": null,
+            "acceptedFileType": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "template-1776790586265",
+    "groupId": "grp-1776790586265",
+    "name": "Test GEO and FIle Type",
+    "version": "1.0",
+    "status": "IN_REVISION",
+    "createdAt": "2026-04-21T16:56:26.265Z",
+    "sections": [
+      {
+        "id": "5a8d7090-0945-400f-8355-d88753e4d855",
+        "name": "New Section",
+        "order": 1,
+        "questions": [
+          {
+            "id": "c9b608da-5d44-445d-869a-c8c408c31d10",
+            "text": "File",
+            "type": "file",
+            "order": 1,
+            "isFollowUp": false,
+            "options": null,
+            "acceptedFileType": "pdf"
+          },
+          {
+            "id": "91187be6-22b5-4f4e-a155-87c009dc00fe",
+            "text": "GeoLocation",
+            "type": "geolocation",
+            "order": 2,
+            "isFollowUp": false,
+            "options": null,
+            "acceptedFileType": null
+          }
+        ]
+      }
+    ]
   }
 ]

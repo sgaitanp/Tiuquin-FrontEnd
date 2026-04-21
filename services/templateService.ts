@@ -37,6 +37,9 @@ function mapSectionsToRequest(sections: any[]) {
       type:       q.type?.toUpperCase(),
       order:      q.order ?? qi + 1,
       isFollowUp: q.isFollowUp ?? false,
+      ...(q.acceptedFileType
+        ? { acceptedFileType: String(q.acceptedFileType).toUpperCase() }
+        : {}),
       ...(q.options ? {
         options: q.options.map((o: any, oi: number) => ({
           id:                 o.id,
@@ -62,12 +65,15 @@ function mapResponseToTemplate(data: any) {
       name:      sec.name,
       order:     sec.order,
       questions: (sec.questions ?? []).map((q: any) => ({
-        id:         q.id,
-        text:       q.text,
-        type:       q.type?.toLowerCase(),
-        order:      q.order,
-        isFollowUp: q.followUp ?? q.isFollowUp ?? false,
-        options:    q.options ?? null,
+        id:               q.id,
+        text:             q.text,
+        type:             q.type?.toLowerCase(),
+        order:            q.order,
+        isFollowUp:       q.followUp ?? q.isFollowUp ?? false,
+        acceptedFileType: q.acceptedFileType
+          ? String(q.acceptedFileType).toLowerCase()
+          : null,
+        options:          q.options ?? null,
       })),
     })),
   }

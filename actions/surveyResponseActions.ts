@@ -76,6 +76,14 @@ export async function getResponseDetail(id: string) {
       return String(ans.inputValue)
     }
 
+    // Geolocation
+    if (
+      typeof ans.latitude === 'number' &&
+      typeof ans.longitude === 'number'
+    ) {
+      return `${ans.latitude}, ${ans.longitude}`
+    }
+
     // Single select
     if (ans.selectedDecisionId) {
       const opt = (q.options ?? []).find((o: any) => o.id === ans.selectedDecisionId)

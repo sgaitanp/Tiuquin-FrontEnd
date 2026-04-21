@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 const Ms = ({
   icon,
@@ -15,20 +15,101 @@ const Ms = ({
   </span>
 );
 
+type FileTypeSpec = {
+  label: string;
+  hint: string;
+  accept: string;
+  test: (f: File) => boolean;
+};
+
+const FILE_TYPE_SPEC: Record<string, FileTypeSpec> = {
+  image: {
+    label: 'image',
+    hint: 'PNG, JPG, GIF, etc.',
+    accept: 'image/*',
+    test: (f) => f.type.startsWith('image/'),
+  },
+  pdf: {
+    label: 'PDF',
+    hint: 'PDF only',
+    accept: 'application/pdf,.pdf',
+    test: (f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name),
+  },
+  doc: {
+    label: 'Word document',
+    hint: 'DOC, DOCX',
+    accept:
+      '.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    test: (f) =>
+      /\.docx?$/i.test(f.name) ||
+      f.type === 'application/msword' ||
+      f.type ===
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  },
+  excel: {
+    label: 'Excel spreadsheet',
+    hint: 'XLS, XLSX, CSV',
+    accept:
+      '.xls,.xlsx,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv',
+    test: (f) =>
+      /\.(xlsx?|csv)$/i.test(f.name) ||
+      f.type === 'application/vnd.ms-excel' ||
+      f.type ===
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      f.type === 'text/csv',
+  },
+  video: {
+    label: 'video',
+    hint: 'MP4, MOV, WEBM, etc.',
+    accept: 'video/*',
+    test: (f) => f.type.startsWith('video/'),
+  },
+  audio: {
+    label: 'audio',
+    hint: 'MP3, WAV, M4A, etc.',
+    accept: 'audio/*',
+    test: (f) => f.type.startsWith('audio/'),
+  },
+};
+
 export default function FileQuestion({
   value,
   onChange,
+  acceptedFileType,
 }: {
   value: File[];
   onChange: (v: File[]) => void;
+  acceptedFileType?: string | null;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState('');
   const files = Array.isArray(value) ? value : [];
 
+  const spec = acceptedFileType
+    ? FILE_TYPE_SPEC[acceptedFileType.toLowerCase()]
+    : null;
+
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newFiles = Array.from(e.target.files ?? []);
-    onChange([...files, ...newFiles]);
+    const picked = Array.from(e.target.files ?? []);
     e.target.value = '';
+
+    if (spec) {
+      const invalid = picked.filter((f) => !spec.test(f));
+      const valid = picked.filter((f) => spec.test(f));
+      if (invalid.length) {
+        setError(
+          `Only ${spec.label} files are accepted. Rejected: ${invalid
+            .map((f) => f.name)
+            .join(', ')}`,
+        );
+      } else {
+        setError('');
+      }
+      if (valid.length) onChange([...files, ...valid]);
+    } else {
+      setError('');
+      onChange([...files, ...picked]);
+    }
   };
 
   const fmt = (bytes: number) =>
@@ -68,16 +149,26 @@ export default function FileQuestion({
           Click to upload or drag and drop
         </p>
         <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>
-          PDF, PNG, JPG up to 10MB
+          {spec
+            ? `Accepted: ${spec.label} (${spec.hint})`
+            : 'Any file up to 10MB'}
         </p>
         <input
           ref={inputRef}
           type="file"
           multiple
+          accept={spec?.accept}
           onChange={handleFile}
           style={{ display: 'none' }}
         />
       </div>
+
+      {error && (
+        <p style={{ fontSize: 11, color: '#ef4444', margin: '8px 0 0' }}>
+          {error}
+        </p>
+      )}
+
       {files.length > 0 && (
         <div
           style={{

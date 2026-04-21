@@ -103,6 +103,8 @@ export async function submitSurvey(
           inputValue: null,
           selectedDecisionId: null,
           selectedDecisionIds: null,
+          latitude: null,
+          longitude: null,
           hasFile: true,
         };
       }
@@ -113,6 +115,8 @@ export async function submitSurvey(
           inputValue: null,
           selectedDecisionId: null,
           selectedDecisionIds: null,
+          latitude: null,
+          longitude: null,
           hasFile: true,
         };
       }
@@ -123,6 +127,25 @@ export async function submitSurvey(
           selectedDecisionIds: value,
           selectedDecisionId: null,
           inputValue: null,
+          latitude: null,
+          longitude: null,
+          hasFile: false,
+        };
+      }
+      if (
+        value &&
+        typeof value === 'object' &&
+        typeof (value as any).latitude === 'number' &&
+        typeof (value as any).longitude === 'number'
+      ) {
+        return {
+          id,
+          questionId,
+          inputValue: null,
+          selectedDecisionId: null,
+          selectedDecisionIds: null,
+          latitude: (value as any).latitude,
+          longitude: (value as any).longitude,
           hasFile: false,
         };
       }
@@ -132,6 +155,8 @@ export async function submitSurvey(
         inputValue: value,
         selectedDecisionId: null,
         selectedDecisionIds: null,
+        latitude: null,
+        longitude: null,
         hasFile: false,
       };
     },
