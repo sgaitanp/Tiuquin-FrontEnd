@@ -20,12 +20,11 @@ export async function getUsers() {
   return res.json()
 }
 
-export async function createUser(user: { name: string; type: string; status: string }) {
-  const id = crypto.randomUUID()
+export async function createUser(user: { id: string; name: string; type: string; status: string }) {
   const res = await fetch(`${API_BASE}/users`, {
     method:  "POST",
     headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify({ id, ...user }),
+    body:    JSON.stringify(user),
   })
   if (!res.ok) throw new Error(`Failed to create user: ${res.status}`)
   return res.json()

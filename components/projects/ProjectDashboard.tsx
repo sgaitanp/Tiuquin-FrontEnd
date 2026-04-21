@@ -974,9 +974,11 @@ function AddSurveyWizard({
   platformOperators: User[];
   fieldCrewMembers: User[];
   onClose: () => void;
-  onAdded: (projectId: string, survey: Omit<SiteSurvey, 'id'>) => void;
+  onAdded: (projectId: string, survey: Omit<SiteSurvey, 'id'>) => Promise<void>;
 }) {
   const [step, setStep] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [wo, setWo] = useState<Record<string, string>>({
     ...EMPTY_WO,
     number: generateWONumber(),
@@ -1049,13 +1051,13 @@ function AddSurveyWizard({
     'Optionally attach files to this site survey.',
   ];
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const crew = fieldCrewMembers.find((m) => m.id === srv.assignedTo) || {
       id: srv.assignedTo,
       name: srv.assignedTo,
     };
-    onAdded(project.id, {
+    const payload = {
       name: srv.name,
       status: srv.status,
       scheduledDate: srv.scheduledDate,
@@ -1084,9 +1086,67 @@ function AddSurveyWizard({
         createdBy: wo.createdBy,
         createdAt: new Date().toISOString(),
       },
-    } as Omit<SiteSurvey, 'id'>);
-    onClose();
+    } as Omit<SiteSurvey, 'id'>;
+
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await onAdded(project.id, payload);
+      onClose();
+    } catch (err) {
+      setSaving(false);
+      setSaveError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to create site survey. Please try again.',
+      );
+    }
   };
+
+  if (saving) {
+    return (
+      <Modal
+        title="Creating site survey…"
+        subtitle="This may take a few seconds. Please keep this window open."
+        onClose={() => {}}
+      >
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 16,
+            padding: '48px 24px',
+          }}
+        >
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: '50%',
+              border: '3px solid #e2e8f0',
+              borderTopColor: '#0f172a',
+              animation: 'spin 0.7s linear infinite',
+            }}
+          />
+          <p
+            style={{
+              fontSize: 13,
+              color: '#64748b',
+              margin: 0,
+              textAlign: 'center',
+            }}
+          >
+            Saving work order, site survey
+            {files.length > 0 ? ` and ${files.length} file${files.length === 1 ? '' : 's'}` : ''}
+            …
+          </p>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal
@@ -1094,6 +1154,25 @@ function AddSurveyWizard({
       subtitle={stepSubtitles[step - 1]}
       onClose={onClose}
     >
+      {saveError && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 8,
+            marginBottom: 14,
+            padding: '10px 12px',
+            borderRadius: 8,
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
+            color: '#b91c1c',
+            fontSize: 12,
+          }}
+        >
+          <Ms icon="error" style={{ fontSize: 16, color: '#dc2626' }} />
+          <span>{saveError}</span>
+        </div>
+      )}
       <StepIndicator step={step} steps={stepTitles} />
 
       {step === 1 && (

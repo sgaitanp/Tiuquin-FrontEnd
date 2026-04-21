@@ -207,7 +207,7 @@ function StatCard({
 // ─── Create User Dialog ───────────────────────────────────────────────────────
 
 const makeEmptyForm = (): CreateUserInput => ({
-  id: crypto.randomUUID(),
+  id: '',
   name: '',
   type: UserTypeEnum.FIELD_CREW_MEMBER,
   status: Status.ACTIVE,
@@ -276,28 +276,14 @@ function CreateUserDialog({
             <Label htmlFor="cu-id">
               User ID <span className="text-destructive">*</span>
             </Label>
-            <div className="flex gap-2">
-              <Input
-                id="cu-id"
-                placeholder="UUID"
-                value={form.id}
-                className="font-mono text-xs"
-                onChange={(e) => setForm((f) => ({ ...f, id: e.target.value }))}
-                disabled={loading}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setForm((f) => ({ ...f, id: crypto.randomUUID() }))
-                }
-                disabled={loading}
-                className="shrink-0 text-xs"
-              >
-                Regenerate
-              </Button>
-            </div>
+            <Input
+              id="cu-id"
+              placeholder="e.g. USR-004"
+              value={form.id}
+              className="font-mono text-xs"
+              onChange={(e) => setForm((f) => ({ ...f, id: e.target.value }))}
+              disabled={loading}
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">

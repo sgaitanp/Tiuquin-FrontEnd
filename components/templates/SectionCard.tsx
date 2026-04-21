@@ -77,40 +77,53 @@ export default function SectionCard({ section, index, readOnly, onUpdate, onDele
             </p>
           )}
 
-          {section.questions.map((q: any, qi: number) => {
-            const typeCfg = TYPE_CFG[q.type] ?? TYPE_CFG.text
-            return (
-              <div key={q.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', borderRadius: 9, border: `1px solid ${q.isFollowUp ? '#fde68a' : '#f1f5f9'}`, background: q.isFollowUp ? '#fffbeb' : '#fafafa' }}>
-                {q.isFollowUp && (
-                  <Ms icon='subdirectory_arrow_right' style={{ fontSize: 15, color: '#f59e0b', marginTop: 2, flexShrink: 0 }} />
-                )}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 13, fontWeight: 500, color: '#0f172a', margin: '0 0 4px', lineHeight: 1.4 }}>{q.text}</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: typeCfg.color, background: `${typeCfg.color}15`, borderRadius: 5, padding: '1px 7px', fontWeight: 500 }}>
-                      <Ms icon={typeCfg.icon} style={{ fontSize: 12, color: typeCfg.color }} />
-                      {typeCfg.label}
-                    </span>
-                    {(q.type === 'multi_select' || q.type === 'single_select') && (
-                      <span style={{ fontSize: 11, color: '#94a3b8' }}>{q.options.length} options</span>
+          {section.questions.length > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                maxHeight: 420,
+                overflowY: 'auto',
+                paddingRight: 4,
+              }}
+            >
+              {section.questions.map((q: any) => {
+                const typeCfg = TYPE_CFG[q.type] ?? TYPE_CFG.text
+                return (
+                  <div key={q.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', borderRadius: 9, border: `1px solid ${q.isFollowUp ? '#fde68a' : '#f1f5f9'}`, background: q.isFollowUp ? '#fffbeb' : '#fafafa' }}>
+                    {q.isFollowUp && (
+                      <Ms icon='subdirectory_arrow_right' style={{ fontSize: 15, color: '#f59e0b', marginTop: 2, flexShrink: 0 }} />
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: '#0f172a', margin: '0 0 4px', lineHeight: 1.4 }}>{q.text}</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: typeCfg.color, background: `${typeCfg.color}15`, borderRadius: 5, padding: '1px 7px', fontWeight: 500 }}>
+                          <Ms icon={typeCfg.icon} style={{ fontSize: 12, color: typeCfg.color }} />
+                          {typeCfg.label}
+                        </span>
+                        {(q.type === 'multi_select' || q.type === 'single_select') && (
+                          <span style={{ fontSize: 11, color: '#94a3b8' }}>{q.options.length} options</span>
+                        )}
+                      </div>
+                    </div>
+                    {!readOnly && (
+                      <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+                        <button onClick={() => onEditQuestion(q, section.id)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                          <Ms icon='edit' style={{ fontSize: 15, color: '#64748b' }} />
+                        </button>
+                        <button onClick={() => removeQuestion(q.id)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                          <Ms icon='delete_outline' style={{ fontSize: 15, color: '#ef4444' }} />
+                        </button>
+                      </div>
                     )}
                   </div>
-                </div>
-                {!readOnly && (
-                  <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
-                    <button onClick={() => onEditQuestion(q, section.id)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
-                      <Ms icon='edit' style={{ fontSize: 15, color: '#64748b' }} />
-                    </button>
-                    <button onClick={() => removeQuestion(q.id)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
-                      <Ms icon='delete_outline' style={{ fontSize: 15, color: '#ef4444' }} />
-                    </button>
-                  </div>
-                )}
-              </div>
-            )
-          })}
+                )
+              })}
+            </div>
+          )}
 
           {!readOnly && (
             <button onClick={addPlaceholder}
