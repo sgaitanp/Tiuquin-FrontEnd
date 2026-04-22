@@ -66,6 +66,103 @@ function FileTypePicker({
   );
 }
 
+// ── Multi-measurement config block ─────────────────────────────────────────────
+function MultiMeasurementConfig({
+  requiredReadings,
+  onChangeRequiredReadings,
+  referencePointLabel,
+  onChangeReferencePointLabel,
+  measurementUnit,
+  onChangeMeasurementUnit,
+  errors,
+}: {
+  requiredReadings: number;
+  onChangeRequiredReadings: (n: number) => void;
+  referencePointLabel: string;
+  onChangeReferencePointLabel: (s: string) => void;
+  measurementUnit: string;
+  onChangeMeasurementUnit: (s: string) => void;
+  errors: Record<string, boolean>;
+}) {
+  const lbl: React.CSSProperties = {
+    fontSize: 12,
+    fontWeight: 600,
+    color: '#374151',
+    display: 'block',
+    marginBottom: 5,
+  };
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 8,
+          padding: '8px 12px',
+          borderRadius: 8,
+          background: '#fdf4ff',
+          border: '1px solid #f5d0fe',
+          fontSize: 11,
+          color: '#86198f',
+          marginBottom: 12,
+        }}
+      >
+        <Ms icon="info" style={{ fontSize: 14, color: '#a21caf', marginTop: 1 }} />
+        The field crew member uploads the floor plan image when they answer this
+        question.
+      </div>
+
+      {/* Required readings + unit */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div>
+          <label style={lbl}>Required Readings *</label>
+          <input
+            type="number"
+            min={1}
+            value={requiredReadings}
+            onChange={(e) => onChangeRequiredReadings(parseInt(e.target.value, 10) || 0)}
+            style={inp(errors.requiredReadings)}
+          />
+          {errors.requiredReadings && (
+            <p style={{ fontSize: 11, color: '#ef4444', margin: '4px 0 0' }}>
+              Must be at least 1
+            </p>
+          )}
+        </div>
+        <div>
+          <label style={lbl}>Measurement Unit *</label>
+          <input
+            type="text"
+            value={measurementUnit}
+            onChange={(e) => onChangeMeasurementUnit(e.target.value)}
+            placeholder="e.g. dBm"
+            style={inp(errors.measurementUnit)}
+          />
+          {errors.measurementUnit && (
+            <p style={{ fontSize: 11, color: '#ef4444', margin: '4px 0 0' }}>Required</p>
+          )}
+        </div>
+      </div>
+
+      {/* Reference point label */}
+      <div style={{ marginTop: 12 }}>
+        <label style={lbl}>Reference Point Label *</label>
+        <input
+          type="text"
+          value={referencePointLabel}
+          onChange={(e) => onChangeReferencePointLabel(e.target.value)}
+          placeholder="e.g. Router"
+          style={inp(errors.referencePointLabel)}
+        />
+        {errors.referencePointLabel && (
+          <p style={{ fontSize: 11, color: '#ef4444', margin: '4px 0 0' }}>Required</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const overlay: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
@@ -458,7 +555,7 @@ export default function QuestionModal({
   onSave: (payload: { question: any; followUps: any[] }) => void;
   onClose: () => void;
 }) {
-  const [text, setText] = useState(question?.text ?? '');
+  const [questionText, setQuestionText] = useState(question?.questionText ?? '');
   const [type, setType] = useState(question?.type ?? 'text');
   const [acceptedFileType, setAcceptedFileType] = useState<string | null>(
     question?.acceptedFileType ?? null,
@@ -476,8 +573,19 @@ export default function QuestionModal({
   });
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
+  // Multi-measurement state
+  const [requiredReadings, setRequiredReadings] = useState<number>(
+    question?.requiredReadings ?? 1,
+  );
+  const [referencePointLabel, setReferencePointLabel] = useState<string>(
+    question?.referencePointLabel ?? '',
+  );
+  const [measurementUnit, setMeasurementUnit] = useState<string>(
+    question?.measurementUnit ?? '',
+  );
+
   useEffect(() => {
-    setText(question?.text ?? '');
+    setQuestionText(question?.questionText ?? '');
     setType(question?.type ?? 'text');
     setAcceptedFileType(question?.acceptedFileType ?? null);
     setOptions(
@@ -491,10 +599,13 @@ export default function QuestionModal({
           }))
         : [],
     );
+    setRequiredReadings(question?.requiredReadings ?? 1);
+    setReferencePointLabel(question?.referencePointLabel ?? '');
+    setMeasurementUnit(question?.measurementUnit ?? '');
     setErrors({});
   }, [question]);
 
-  // Reset acceptedFileType whenever the main type changes away from file
+  // Reset type-specific fields whenever the main type changes
   const handleSetType = (t: string) => {
     setType(t);
     if (t !== 'file') setAcceptedFileType(null);
@@ -522,7 +633,7 @@ export default function QuestionModal({
 
   const validate = () => {
     const e: Record<string, boolean> = {};
-    if (!text.trim()) e.text = true;
+    if (!questionText.trim()) e.questionText = true;
     if (type === 'file' && !acceptedFileType) e.acceptedFileType = true;
     if (
       (type === 'multi_select' || type === 'single_select') &&
@@ -540,6 +651,12 @@ export default function QuestionModal({
           e[`opt-${i}`] = true;
         }
       });
+    }
+    if (type === 'multi_measurement') {
+      if (!Number.isFinite(requiredReadings) || requiredReadings < 1)
+        e.requiredReadings = true;
+      if (!referencePointLabel.trim()) e.referencePointLabel = true;
+      if (!measurementUnit.trim()) e.measurementUnit = true;
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -560,7 +677,7 @@ export default function QuestionModal({
           const fuType = o.followUpType ?? 'text';
           followUps.push({
             id: fqId,
-            text:
+            questionText:
               o.followUpText?.trim() ||
               `Please provide more details about "${o.text}"`,
             type: fuType,
@@ -574,15 +691,21 @@ export default function QuestionModal({
         })
       : null;
 
-    const q = {
+    const q: any = {
       id: question?.id ?? uid(),
-      text: text.trim(),
+      questionText: questionText.trim(),
       type,
       order: question?.order ?? 999,
       isFollowUp: question?.isFollowUp ?? false,
       options: builtOptions,
       acceptedFileType: type === 'file' ? acceptedFileType : null,
     };
+
+    if (type === 'multi_measurement') {
+      q.requiredReadings = requiredReadings;
+      q.referencePointLabel = referencePointLabel.trim();
+      q.measurementUnit = measurementUnit.trim();
+    }
 
     onSave({ question: q, followUps });
   };
@@ -628,13 +751,13 @@ export default function QuestionModal({
             Question Text *
           </label>
           <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
+            value={questionText}
+            onChange={(e) => setQuestionText(e.target.value)}
             placeholder="e.g. What type of flooring is present?"
             rows={2}
-            style={{ ...inp(errors.text), resize: 'vertical' }}
+            style={{ ...inp(errors.questionText), resize: 'vertical' }}
           />
-          {errors.text && (
+          {errors.questionText && (
             <p style={{ fontSize: 11, color: '#ef4444', margin: '4px 0 0' }}>
               Required
             </p>
@@ -722,6 +845,19 @@ export default function QuestionModal({
               </p>
             )}
           </div>
+        )}
+
+        {/* Multi-measurement config */}
+        {type === 'multi_measurement' && (
+          <MultiMeasurementConfig
+            requiredReadings={requiredReadings}
+            onChangeRequiredReadings={setRequiredReadings}
+            referencePointLabel={referencePointLabel}
+            onChangeReferencePointLabel={setReferencePointLabel}
+            measurementUnit={measurementUnit}
+            onChangeMeasurementUnit={setMeasurementUnit}
+            errors={errors}
+          />
         )}
 
         {/* Options */}

@@ -1,15 +1,25 @@
 import { useState, useMemo, useCallback, useEffect } from "react"
 import { submitSurvey } from "@/services/surveyService"
 import { STATUS_CFG, completionOf } from "./shared"
-import TextQuestion         from "./questions/TextQuestion"
-import SingleSelectQuestion from "./questions/SingleSelectQuestion"
-import MultiSelectQuestion  from "./questions/MultiSelectQuestion"
-import FileQuestion         from "./questions/FileQuestion"
-import GeoLocationQuestion  from "./questions/GeoLocationQuestion"
+import TextQuestion             from "./questions/TextQuestion"
+import SingleSelectQuestion     from "./questions/SingleSelectQuestion"
+import MultiSelectQuestion      from "./questions/MultiSelectQuestion"
+import FileQuestion             from "./questions/FileQuestion"
+import GeoLocationQuestion      from "./questions/GeoLocationQuestion"
+import MultiMeasurementQuestion from "./questions/MultiMeasurementQuestion"
 
-// Treat geolocation values (objects with lat/lng) as "answered"
-const isAnswered = (v: any) => {
+// A question is "answered" if its value satisfies the type's shape.
+// For multi_measurement, the question is needed to enforce requiredReadings.
+const isAnswered = (v: any, q?: any) => {
   if (v === null || v === undefined) return false
+  if (q?.type === 'multi_measurement') {
+    const need = Math.max(1, q.requiredReadings ?? 1)
+    return v.file instanceof File
+      && typeof v.referenceX === 'number'
+      && typeof v.referenceY === 'number'
+      && Array.isArray(v.measurements)
+      && v.measurements.length >= need
+  }
   if (Array.isArray(v)) return v.length > 0
   if (typeof v === 'object')
     return typeof v.latitude === 'number' && typeof v.longitude === 'number'
@@ -66,7 +76,7 @@ export default function SurveyForm({ survey, template, onResponsesChange, onSubm
 
   const pct        = completionOf(template, responses)
   const currentSec = template.sections.find((s: any) => s.id === activeSection)
-  const secDone    = (sec: any) => sec.questions.filter((q: any) => !q.isFollowUp).every((q: any) => isAnswered(responses[q.id]))
+  const secDone    = (sec: any) => sec.questions.filter((q: any) => !q.isFollowUp).every((q: any) => isAnswered(responses[q.id], q))
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -124,12 +134,13 @@ export default function SurveyForm({ survey, template, onResponsesChange, onSubm
               return (
                 <div key={q.id} style={{ padding: isFollowUp ? "14px 16px" : 0, borderRadius: isFollowUp ? 10 : 0, border: isFollowUp ? "1px solid #fde68a" : "none", background: isFollowUp ? "#fffbeb" : "transparent", marginLeft: isFollowUp ? 16 : 0 }}>
                   {isFollowUp && <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8 }}><Ms icon="subdirectory_arrow_right" style={{ fontSize: 14, color: "#f59e0b" }} /><span style={{ fontSize: 10, fontWeight: 600, color: "#b45309", textTransform: "uppercase", letterSpacing: "0.05em" }}>Follow-up</span></div>}
-                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#0f172a", marginBottom: 10 }}>{q.text}{!q.isFollowUp && <span style={{ color: "#ef4444", marginLeft: 2 }}>*</span>}</label>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#0f172a", marginBottom: 10 }}>{q.questionText}{!q.isFollowUp && <span style={{ color: "#ef4444", marginLeft: 2 }}>*</span>}</label>
                   {q.type === "text"          && <TextQuestion         value={responses[q.id]}       onChange={v => setAnswer(q.id, v)} />}
                   {q.type === "single_select" && <SingleSelectQuestion question={q} value={responses[q.id] || ''} onChange={v => setAnswer(q.id, v)} />}
                   {q.type === "multi_select"  && <MultiSelectQuestion  question={q} value={responses[q.id] || []} onChange={v => setAnswer(q.id, v)} />}
                   {q.type === "file"          && <FileQuestion         value={responses[q.id] || []} onChange={v => setAnswer(q.id, v)} acceptedFileType={q.acceptedFileType} />}
                   {q.type === "geolocation"   && <GeoLocationQuestion  value={responses[q.id] ?? null} onChange={v => setAnswer(q.id, v)} />}
+                  {q.type === "multi_measurement" && <MultiMeasurementQuestion question={q} value={responses[q.id] ?? null} onChange={v => setAnswer(q.id, v)} />}
                 </div>
               )
             })}

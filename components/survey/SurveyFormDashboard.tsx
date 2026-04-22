@@ -347,6 +347,46 @@ export default function SurveyFormDashboard() {
   const [fillingOut, setFillingOut] = useState(false);
   const [role, setRole] = useState('');
 
+  // Fill-out modal: user-resizable via the bottom-right handle.
+  const FILL_MODAL_MIN_W = 420;
+  const FILL_MODAL_MIN_H = 320;
+  const [fillModalSize, setFillModalSize] = useState<{ w: number; h: number }>({
+    w: 720,
+    h: 700,
+  });
+  useEffect(() => {
+    if (!fillingOut) return;
+    setFillModalSize({
+      w: Math.min(720, Math.floor(window.innerWidth * 0.95)),
+      h: Math.min(700, Math.floor(window.innerHeight * 0.85)),
+    });
+  }, [fillingOut]);
+  const startFillModalResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startW = fillModalSize.w;
+    const startH = fillModalSize.h;
+    const onMove = (ev: MouseEvent) => {
+      const maxW = window.innerWidth - 20;
+      const maxH = window.innerHeight - 20;
+      const w = Math.min(maxW, Math.max(FILL_MODAL_MIN_W, startW + (ev.clientX - startX)));
+      const h = Math.min(maxH, Math.max(FILL_MODAL_MIN_H, startH + (ev.clientY - startY)));
+      setFillModalSize({ w, h });
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'nwse-resize';
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
   // Normalize getAllSiteSurveys shape to match frontend expectations
   const normalizeSurvey = (s: any) => ({
     ...s,
@@ -941,7 +981,7 @@ export default function SurveyFormDashboard() {
                                       margin: 0,
                                     }}
                                   >
-                                    {q.text}
+                                    {q.questionText}
                                   </p>
                                   {q.options && (
                                     <div
@@ -1349,10 +1389,15 @@ export default function SurveyFormDashboard() {
         >
           <div
             style={{
+              position: 'relative',
               background: '#fff',
               borderRadius: 14,
-              width: 'min(720px, 95vw)',
-              height: 'min(85vh, 700px)',
+              width: fillModalSize.w,
+              height: fillModalSize.h,
+              minWidth: FILL_MODAL_MIN_W,
+              minHeight: FILL_MODAL_MIN_H,
+              maxWidth: '98vw',
+              maxHeight: '98vh',
               display: 'flex',
               flexDirection: 'column',
               boxShadow: '0 24px 64px rgba(0,0,0,0.2)',
@@ -1407,6 +1452,27 @@ export default function SurveyFormDashboard() {
                 }}
               />
             </div>
+            {/* Resize handle — drag from bottom-right to resize the modal */}
+            <div
+              onMouseDown={startFillModalResize}
+              title="Drag to resize"
+              style={{
+                position: 'absolute',
+                right: 0,
+                bottom: 0,
+                width: 18,
+                height: 18,
+                cursor: 'nwse-resize',
+                display: 'flex',
+                alignItems: 'flex-end',
+                justifyContent: 'flex-end',
+                padding: 2,
+                color: '#94a3b8',
+                background:
+                  'linear-gradient(135deg, transparent 0 55%, #cbd5e1 55% 60%, transparent 60% 70%, #cbd5e1 70% 75%, transparent 75% 85%, #cbd5e1 85% 90%, transparent 90%)',
+                borderBottomRightRadius: 14,
+              }}
+            />
           </div>
         </div>
       )}

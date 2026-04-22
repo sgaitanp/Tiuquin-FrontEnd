@@ -32,14 +32,19 @@ function mapSectionsToRequest(sections: any[]) {
     description: sec.description ?? "",
     order:       sec.order ?? si + 1,
     questions:   (sec.questions ?? []).map((q: any, qi: number) => ({
-      id:         q.id,
-      text:       q.text,
-      type:       q.type?.toUpperCase(),
+      id:           q.id,
+      questionText: q.questionText,
+      type:         q.type?.toUpperCase(),
       order:      q.order ?? qi + 1,
       isFollowUp: q.isFollowUp ?? false,
       ...(q.acceptedFileType
         ? { acceptedFileType: String(q.acceptedFileType).toUpperCase() }
         : {}),
+      ...(q.type === 'multi_measurement' ? {
+        requiredReadings:    q.requiredReadings,
+        referencePointLabel: q.referencePointLabel,
+        measurementUnit:     q.measurementUnit,
+      } : {}),
       ...(q.options ? {
         options: q.options.map((o: any, oi: number) => ({
           id:                 o.id,
@@ -66,7 +71,7 @@ function mapResponseToTemplate(data: any) {
       order:     sec.order,
       questions: (sec.questions ?? []).map((q: any) => ({
         id:               q.id,
-        text:             q.text,
+        questionText:     q.questionText,
         type:             q.type?.toLowerCase(),
         order:            q.order,
         isFollowUp:       q.followUp ?? q.isFollowUp ?? false,
@@ -74,6 +79,11 @@ function mapResponseToTemplate(data: any) {
           ? String(q.acceptedFileType).toLowerCase()
           : null,
         options:          q.options ?? null,
+        ...(q.type?.toLowerCase() === 'multi_measurement' ? {
+          requiredReadings:    q.requiredReadings ?? null,
+          referencePointLabel: q.referencePointLabel ?? null,
+          measurementUnit:     q.measurementUnit ?? null,
+        } : {}),
       })),
     })),
   }

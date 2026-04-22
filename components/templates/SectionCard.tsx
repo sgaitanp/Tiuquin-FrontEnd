@@ -96,7 +96,7 @@ export default function SectionCard({ section, index, readOnly, onUpdate, onDele
                       <Ms icon='subdirectory_arrow_right' style={{ fontSize: 15, color: '#f59e0b', marginTop: 2, flexShrink: 0 }} />
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 500, color: '#0f172a', margin: '0 0 4px', lineHeight: 1.4 }}>{q.text}</p>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: '#0f172a', margin: '0 0 4px', lineHeight: 1.4 }}>{q.questionText}</p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: typeCfg.color, background: `${typeCfg.color}15`, borderRadius: 5, padding: '1px 7px', fontWeight: 500 }}>
                           <Ms icon={typeCfg.icon} style={{ fontSize: 12, color: typeCfg.color }} />
@@ -104,6 +104,11 @@ export default function SectionCard({ section, index, readOnly, onUpdate, onDele
                         </span>
                         {(q.type === 'multi_select' || q.type === 'single_select') && (
                           <span style={{ fontSize: 11, color: '#94a3b8' }}>{q.options.length} options</span>
+                        )}
+                        {q.type === 'multi_measurement' && (
+                          <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                            {q.requiredReadings ?? 0} readings · {q.measurementUnit || '—'}
+                          </span>
                         )}
                       </div>
                     </div>

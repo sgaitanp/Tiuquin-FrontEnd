@@ -176,11 +176,254 @@ function FileCard({ file }: { file: any }) {
   );
 }
 
+function MeasurementOverlay({ qa }: { qa: any }) {
+  // The crew member uploaded the floor plan with their response — pick the first
+  // attached image file.
+  const imageFile =
+    Array.isArray(qa.files)
+      ? qa.files.find((f: any) => f.fileType?.startsWith('image/')) ?? qa.files[0]
+      : null;
+  const imageFileId: string | null = imageFile?.id ?? null;
+  const measurements: Array<{ x: number; y: number; value: number; order: number }> =
+    Array.isArray(qa.measurements) ? qa.measurements : [];
+  const sorted = [...measurements].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const unit: string = qa.measurementUnit || '';
+  const referenceLabel: string = qa.referencePointLabel || 'Reference';
+  const hasRef =
+    typeof qa.referenceX === 'number' && typeof qa.referenceY === 'number';
+
+  const [imgSrc, setImgSrc] = React.useState<string | null>(null);
+  const [natural, setNatural] = React.useState<{ w: number; h: number } | null>(
+    null,
+  );
+  const [rendered, setRendered] = React.useState<{ w: number; h: number } | null>(
+    null,
+  );
+  const [failed, setFailed] = React.useState(false);
+  const imgRef = React.useRef<HTMLImageElement | null>(null);
+  const wrapRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    if (!imageFileId) {
+      setFailed(true);
+      return;
+    }
+    let revoked = false;
+    let objectUrl: string | null = null;
+    fetch(getFileUrl(imageFileId), { headers: getAuthHeaders() })
+      .then((r) => {
+        if (!r.ok) throw new Error(String(r.status));
+        return r.blob();
+      })
+      .then((blob) => {
+        if (revoked) return;
+        objectUrl = URL.createObjectURL(blob);
+        setImgSrc(objectUrl);
+      })
+      .catch(() => !revoked && setFailed(true));
+    return () => {
+      revoked = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [imageFileId]);
+
+  React.useEffect(() => {
+    if (!wrapRef.current) return;
+    const update = () => {
+      if (!imgRef.current) return;
+      setRendered({
+        w: imgRef.current.clientWidth,
+        h: imgRef.current.clientHeight,
+      });
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(wrapRef.current);
+    window.addEventListener('resize', update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, [imgSrc]);
+
+  const scaleX = natural && rendered ? rendered.w / natural.w : 1;
+  const scaleY = natural && rendered ? rendered.h / natural.h : 1;
+
+  if (!imageFileId || failed) {
+    return (
+      <div
+        style={{
+          border: '1px solid #e2e8f0',
+          borderRadius: 8,
+          padding: 12,
+          background: '#f8fafc',
+        }}
+      >
+        <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 8px' }}>
+          Floor plan unavailable. Showing raw data:
+        </p>
+        {hasRef && (
+          <p style={{ fontSize: 12, color: '#0f172a', margin: '0 0 4px' }}>
+            {referenceLabel}: ({Math.round(qa.referenceX)}, {Math.round(qa.referenceY)})
+          </p>
+        )}
+        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: '#374151' }}>
+          {sorted.map((m) => (
+            <li key={m.order}>
+              #{m.order + 1}: {m.value}
+              {unit ? ` ${unit}` : ''} at ({Math.round(m.x)}, {Math.round(m.y)})
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div
+        ref={wrapRef}
+        style={{
+          position: 'relative',
+          border: '1px solid #e2e8f0',
+          borderRadius: 8,
+          overflow: 'hidden',
+          background: '#f8fafc',
+        }}
+      >
+        {imgSrc ? (
+          <img
+            ref={imgRef}
+            src={imgSrc}
+            alt="Floor plan"
+            draggable={false}
+            onLoad={(e) => {
+              const t = e.currentTarget;
+              setNatural({ w: t.naturalWidth, h: t.naturalHeight });
+              setRendered({ w: t.clientWidth, h: t.clientHeight });
+            }}
+            style={{ width: '100%', display: 'block' }}
+          />
+        ) : (
+          <div
+            style={{
+              padding: 40,
+              textAlign: 'center',
+              color: '#94a3b8',
+              fontSize: 13,
+            }}
+          >
+            Loading floor plan…
+          </div>
+        )}
+        {hasRef && natural && rendered && (
+          <OverlayDot
+            x={qa.referenceX * scaleX}
+            y={qa.referenceY * scaleY}
+            color="#db2777"
+            icon="my_location"
+            label={referenceLabel}
+          />
+        )}
+        {natural &&
+          rendered &&
+          sorted.map((m) => (
+            <OverlayDot
+              key={m.order}
+              x={m.x * scaleX}
+              y={m.y * scaleY}
+              color="#0ea5e9"
+              label={`${m.value}${unit ? ` ${unit}` : ''}`}
+            />
+          ))}
+      </div>
+      <p style={{ fontSize: 11, color: '#64748b', margin: 0 }}>
+        {sorted.length} measurement{sorted.length === 1 ? '' : 's'}
+        {hasRef ? ` · ${referenceLabel} marked` : ''}
+      </p>
+    </div>
+  );
+}
+
+function OverlayDot({
+  x,
+  y,
+  color,
+  icon,
+  label,
+}: {
+  x: number;
+  y: number;
+  color: string;
+  icon?: string;
+  label?: string;
+}) {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: x,
+        top: y,
+        transform: 'translate(-50%, -50%)',
+        pointerEvents: 'none',
+      }}
+    >
+      <div
+        style={{
+          width: 16,
+          height: 16,
+          borderRadius: '50%',
+          background: color,
+          border: '2px solid #fff',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {icon && (
+          <span
+            className="material-symbols-outlined"
+            style={{ fontSize: 11, color: '#fff', lineHeight: 1 }}
+          >
+            {icon}
+          </span>
+        )}
+      </div>
+      {label && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 18,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            fontSize: 10,
+            fontWeight: 600,
+            color: '#0f172a',
+            background: '#fff',
+            border: `1px solid ${color}`,
+            borderRadius: 4,
+            padding: '1px 5px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {label}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function QuestionCard({ qa }: { qa: any }) {
   const hasFiles = qa.files && qa.files.length > 0;
   const hasGeo =
     typeof qa.latitude === 'number' && typeof qa.longitude === 'number';
   const displayValue = qa.selectedOptionText ?? qa.inputValue;
+  const isMultiMeasurement = qa.questionType === 'MULTI_MEASUREMENT';
+  const hasMeasurements =
+    isMultiMeasurement &&
+    Array.isArray(qa.measurements) &&
+    qa.measurements.length > 0;
 
   return (
     <div
@@ -288,7 +531,7 @@ function QuestionCard({ qa }: { qa: any }) {
       )}
 
       {/* Files */}
-      {hasFiles && (
+      {hasFiles && !isMultiMeasurement && (
         <div
           style={{
             display: 'grid',
@@ -302,8 +545,13 @@ function QuestionCard({ qa }: { qa: any }) {
         </div>
       )}
 
+      {/* Multi-measurement overlay */}
+      {isMultiMeasurement && (
+        <MeasurementOverlay qa={qa} />
+      )}
+
       {/* No answer */}
-      {!displayValue && !hasFiles && !hasGeo && (
+      {!displayValue && !hasFiles && !hasGeo && !hasMeasurements && (
         <p
           style={{
             fontSize: 12,

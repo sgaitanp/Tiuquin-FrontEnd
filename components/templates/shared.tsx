@@ -22,15 +22,16 @@ export function StatusBadge({ status }: { status: string }) {
   )
 }
 
-export const QUESTION_TYPES = ['text', 'single_select', 'multi_select', 'file', 'geolocation'] as const
+export const QUESTION_TYPES = ['text', 'single_select', 'multi_select', 'file', 'geolocation', 'multi_measurement'] as const
 export type QuestionType = typeof QUESTION_TYPES[number]
 
 export const TYPE_CFG: Record<string, { label: string; icon: string; color: string }> = {
-  text:          { label: 'Text',          icon: 'short_text',    color: '#6366f1' },
-  single_select: { label: 'Single Choice', icon: 'radio_button_checked', color: '#8b5cf6' },
-  multi_select:  { label: 'Multi Select',  icon: 'checklist',     color: '#0ea5e9' },
-  file:          { label: 'File Upload',   icon: 'upload_file',   color: '#f59e0b' },
-  geolocation:   { label: 'Geolocation',   icon: 'location_on',   color: '#10b981' },
+  text:              { label: 'Text',             icon: 'short_text',           color: '#6366f1' },
+  single_select:     { label: 'Single Choice',    icon: 'radio_button_checked', color: '#8b5cf6' },
+  multi_select:      { label: 'Multi Select',     icon: 'checklist',            color: '#0ea5e9' },
+  file:              { label: 'File Upload',      icon: 'upload_file',          color: '#f59e0b' },
+  geolocation:       { label: 'Geolocation',      icon: 'location_on',          color: '#10b981' },
+  multi_measurement: { label: 'Multi Measurement', icon: 'scatter_plot',        color: '#db2777' },
 }
 
 export const ACCEPTED_FILE_TYPES = ['image', 'pdf', 'doc', 'excel', 'video', 'audio'] as const

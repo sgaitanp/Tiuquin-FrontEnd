@@ -31,6 +31,14 @@ export function completionOf(template: any, responses: any) {
   const answered = primary.filter((q: any) => {
     const v = responses[q.id]
     if (v === null || v === undefined) return false
+    if (q.type === 'multi_measurement') {
+      const need = Math.max(1, q.requiredReadings ?? 1)
+      return v.file instanceof File
+        && typeof v.referenceX === 'number'
+        && typeof v.referenceY === 'number'
+        && Array.isArray(v.measurements)
+        && v.measurements.length >= need
+    }
     if (Array.isArray(v)) return v.length > 0
     if (typeof v === 'object')
       return typeof v.latitude === 'number' && typeof v.longitude === 'number'

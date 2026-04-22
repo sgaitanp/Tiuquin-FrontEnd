@@ -135,6 +135,35 @@ export async function submitSurvey(
       if (
         value &&
         typeof value === 'object' &&
+        (typeof (value as any).referenceX === 'number' ||
+          Array.isArray((value as any).measurements) ||
+          (value as any).file instanceof File)
+      ) {
+        const v = value as any;
+        return {
+          id,
+          questionId,
+          referenceX: typeof v.referenceX === 'number' ? v.referenceX : null,
+          referenceY: typeof v.referenceY === 'number' ? v.referenceY : null,
+          measurements: Array.isArray(v.measurements)
+            ? v.measurements.map((m: any, i: number) => ({
+                x: m.x,
+                y: m.y,
+                value: m.value,
+                order: typeof m.order === 'number' ? m.order : i,
+              }))
+            : [],
+          inputValue: null,
+          selectedDecisionId: null,
+          selectedDecisionIds: null,
+          latitude: null,
+          longitude: null,
+          hasFile: v.file instanceof File,
+        };
+      }
+      if (
+        value &&
+        typeof value === 'object' &&
         typeof (value as any).latitude === 'number' &&
         typeof (value as any).longitude === 'number'
       ) {
@@ -186,7 +215,9 @@ export async function submitSurvey(
       ? value
       : value instanceof File
         ? [value]
-        : [];
+        : value && typeof value === 'object' && (value as any).file instanceof File
+          ? [(value as any).file]
+          : [];
     files.forEach((file: any) => {
       if (file instanceof File) formData.append(responseEntry.id, file);
     });
