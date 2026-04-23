@@ -1,3 +1,9 @@
+import type {
+  Project,
+  SiteSurvey,
+  WorkOrder,
+} from '@/types/project';
+
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080/api/v1';
 
@@ -23,7 +29,9 @@ export async function getSiteSurveyFiles(siteSurveyId: string) {
   return res.json();
 }
 
-export async function getSiteSurveyWorkOrder(siteSurveyId: string) {
+export async function getSiteSurveyWorkOrder(
+  siteSurveyId: string,
+): Promise<WorkOrder | null> {
   const res = await fetch(
     `${API_BASE}/site-surveys/${siteSurveyId}/work-order`,
     {
@@ -35,18 +43,18 @@ export async function getSiteSurveyWorkOrder(siteSurveyId: string) {
   return res.json();
 }
 
-export async function getProjects() {
+export async function getProjects(): Promise<Project[]> {
   const res = await fetch(`${API_BASE}/projects`, {
     headers: authHeaders(),
     cache: 'no-store',
   });
   if (!res.ok) throw new Error(`Failed to fetch projects (${res.status})`);
-  const projects = await res.json();
+  const projects: Project[] = await res.json();
 
   // Normalize siteSurveys shape for the frontend
-  return projects.map((p: any) => ({
+  return projects.map((p) => ({
     ...p,
-    siteSurveys: (p.siteSurveys ?? []).map((s: any) => ({
+    siteSurveys: (p.siteSurveys ?? []).map((s) => ({
       id: s.id,
       name: s.name ?? '',
       status: s.status ?? 'PLANNED',
@@ -57,7 +65,7 @@ export async function getProjects() {
       projectName: p.name,
       client: p.client,
       templateId: s.templateId ?? null,
-      assignedTo: s.assignedTo ?? null,
+      assignedTo: s.assignedTo ?? undefined,
       workOrder: s.workOrder ?? null,
       responses: s.responses ?? {},
       latitude: s.latitude ?? null,
@@ -66,7 +74,7 @@ export async function getProjects() {
   }));
 }
 
-export async function getProjectById(id: string) {
+export async function getProjectById(id: string): Promise<Project> {
   const res = await fetch(`${API_BASE}/projects/${id}`, {
     headers: authHeaders(),
     cache: 'no-store',
@@ -75,7 +83,10 @@ export async function getProjectById(id: string) {
   return res.json();
 }
 
-export async function createProject(data: { name: string; client: string }) {
+export async function createProject(data: {
+  name: string;
+  client: string;
+}): Promise<Project> {
   const res = await fetch(`${API_BASE}/projects`, {
     method: 'POST',
     headers: authHeaders(),
@@ -88,7 +99,13 @@ export async function createProject(data: { name: string; client: string }) {
   return res.json();
 }
 
-export async function createSiteSurvey(projectId: string, survey: any) {
+export async function createSiteSurvey(
+  projectId: string,
+  survey: Omit<SiteSurvey, 'id' | 'workOrder'> & {
+    workOrder: Omit<WorkOrder, 'id'>;
+    files?: File[];
+  },
+): Promise<SiteSurvey> {
   // Step 1 — create work order
   const woRes = await fetch(`${API_BASE}/workOrders`, {
     method: 'POST',
@@ -127,8 +144,8 @@ export async function createSiteSurvey(projectId: string, survey: any) {
     new Blob([JSON.stringify(siteSurveyData)], { type: 'application/json' }),
   );
 
-  const surveyFiles: File[] = (survey as any).files ?? [];
-  surveyFiles.forEach((file: File) => {
+  const surveyFiles: File[] = survey.files ?? [];
+  surveyFiles.forEach((file) => {
     const key = crypto.randomUUID();
     formData.append(key, file);
   });

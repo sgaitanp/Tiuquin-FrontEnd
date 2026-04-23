@@ -1,3 +1,5 @@
+import { Status, type CreateUserInput, type User } from "@/types/user"
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1"
 
 function getToken(): string {
@@ -11,7 +13,7 @@ function authHeaders() {
   }
 }
 
-export async function getUserById(id: string) {
+export async function getUserById(id: string): Promise<User> {
   const res = await fetch(`${API_BASE}/users/${id}`, {
     headers: authHeaders(),
     cache:   "no-store",
@@ -20,7 +22,7 @@ export async function getUserById(id: string) {
   return res.json()
 }
 
-export async function getUsers() {
+export async function getUsers(): Promise<User[]> {
   const res = await fetch(`${API_BASE}/users`, {
     headers: authHeaders(),
     cache:   "no-store",
@@ -29,7 +31,7 @@ export async function getUsers() {
   return res.json()
 }
 
-export async function createUser(user: { id: string; name: string; type: string; status: string; password: string }) {
+export async function createUser(user: CreateUserInput): Promise<User> {
   const res = await fetch(`${API_BASE}/users`, {
     method:  "POST",
     headers: authHeaders(),
@@ -39,7 +41,7 @@ export async function createUser(user: { id: string; name: string; type: string;
   return res.json()
 }
 
-export async function updateUser(id: string, data: any) {
+export async function updateUser(id: string, data: Partial<CreateUserInput>): Promise<User> {
   const res = await fetch(`${API_BASE}/users/${id}`, {
     method:  "PATCH",
     headers: authHeaders(),
@@ -52,11 +54,11 @@ export async function updateUser(id: string, data: any) {
   return res.json()
 }
 
-export async function deactivateUser(id: string) {
-  return updateUser(id, { status: "INACTIVE" })
+export async function deactivateUser(id: string): Promise<User> {
+  return updateUser(id, { status: Status.INACTIVE })
 }
 
-export async function getUsersByType(type: string) {
+export async function getUsersByType(type: string): Promise<User[]> {
   const res = await fetch(`${API_BASE}/users/type/${type}`, {
     headers: authHeaders(),
     cache:   "no-store",

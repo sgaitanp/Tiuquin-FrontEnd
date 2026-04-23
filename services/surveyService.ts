@@ -1,3 +1,12 @@
+import type { SiteSurvey, SiteSurveyStatus } from '@/types/project';
+import type {
+  GeoValue,
+  MultiMeasurementValue,
+  QuestionValue,
+  ResponseDetail,
+} from '@/types/response';
+import type { Template } from '@/types/template';
+
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080/api/v1';
 
@@ -12,7 +21,7 @@ function authHeaders() {
   };
 }
 
-export async function getAllSiteSurveys() {
+export async function getAllSiteSurveys(): Promise<SiteSurvey[]> {
   const res = await fetch(`${API_BASE}/site-surveys`, {
     headers: authHeaders(),
     cache: 'no-store',
@@ -21,7 +30,9 @@ export async function getAllSiteSurveys() {
   return res.json();
 }
 
-export async function getAssignedSurveys(userId: string) {
+export async function getAssignedSurveys(
+  userId: string,
+): Promise<SiteSurvey[]> {
   const res = await fetch(`${API_BASE}/site-surveys/user/${userId}`, {
     headers: authHeaders(),
     cache: 'no-store',
@@ -30,7 +41,7 @@ export async function getAssignedSurveys(userId: string) {
   return res.json();
 }
 
-export async function getSiteSurveysWithResponses() {
+export async function getSiteSurveysWithResponses(): Promise<SiteSurvey[]> {
   const res = await fetch(`${API_BASE}/site-surveys/with-responses`, {
     headers: authHeaders(),
     cache: 'no-store',
@@ -40,7 +51,9 @@ export async function getSiteSurveysWithResponses() {
   return res.json();
 }
 
-export async function getSiteSurveysWithResponsesByStatus(status: string) {
+export async function getSiteSurveysWithResponsesByStatus(
+  status: SiteSurveyStatus,
+): Promise<SiteSurvey[]> {
   const res = await fetch(
     `${API_BASE}/site-surveys/with-responses/status/${status}`,
     {
@@ -52,7 +65,9 @@ export async function getSiteSurveysWithResponsesByStatus(status: string) {
   return res.json();
 }
 
-export async function getSiteSurveyResponses(siteSurveyId: string) {
+export async function getSiteSurveyResponses(
+  siteSurveyId: string,
+): Promise<ResponseDetail[]> {
   const res = await fetch(
     `${API_BASE}/site-surveys/${siteSurveyId}/responses`,
     {
@@ -66,8 +81,8 @@ export async function getSiteSurveyResponses(siteSurveyId: string) {
 
 export async function updateSiteSurveyStatus(
   siteSurveyId: string,
-  status: string,
-) {
+  status: SiteSurveyStatus,
+): Promise<SiteSurvey> {
   const res = await fetch(`${API_BASE}/site-surveys/${siteSurveyId}/status`, {
     method: 'PATCH',
     headers: authHeaders(),
@@ -80,114 +95,99 @@ export async function updateSiteSurveyStatus(
   return res.json();
 }
 
+// Shape the backend expects for each answer in the `response` JSON blob.
+interface ResponseEntryDTO {
+  id: string;
+  questionId: string;
+  inputValue: string | null;
+  selectedDecisionId: string | null;
+  selectedDecisionIds: string[] | null;
+  latitude: number | null;
+  longitude: number | null;
+  hasFile: boolean;
+  referenceX?: number | null;
+  referenceY?: number | null;
+  measurements?: {
+    x: number;
+    y: number;
+    value: number;
+    order: number;
+  }[];
+}
+
+// Narrowing helpers for the QuestionValue union. The union has no
+// tag field, so we branch on runtime shape — order matters
+// (`File[]` check must come before the generic `string[]` array check).
+function isFileArray(v: QuestionValue): v is File[] {
+  return Array.isArray(v) && v.length > 0 && v[0] instanceof File;
+}
+function isMultiMeasurement(v: QuestionValue): v is MultiMeasurementValue {
+  return (
+    typeof v === 'object' &&
+    v !== null &&
+    !Array.isArray(v) &&
+    ('measurements' in v || 'referenceX' in v || 'file' in v)
+  );
+}
+function isGeo(v: QuestionValue): v is GeoValue {
+  return (
+    typeof v === 'object' &&
+    v !== null &&
+    !Array.isArray(v) &&
+    'latitude' in v &&
+    'longitude' in v
+  );
+}
+
 export async function submitSurvey(
-  survey: any,
-  template: any,
-  responses: Record<string, any>,
+  survey: SiteSurvey,
+  _template: Template,
+  responses: Record<string, QuestionValue>,
 ) {
   const currentUser = JSON.parse(
     sessionStorage.getItem('currentUser') ?? 'null',
   );
 
-  const mappedResponses = Object.entries(responses).map(
+  const mappedResponses: ResponseEntryDTO[] = Object.entries(responses).map(
     ([questionId, value]) => {
       const id = crypto.randomUUID();
-      if (
-        Array.isArray(value) &&
-        value.length > 0 &&
-        value[0] instanceof File
-      ) {
-        return {
-          id,
-          questionId,
-          inputValue: null,
-          selectedDecisionId: null,
-          selectedDecisionIds: null,
-          latitude: null,
-          longitude: null,
-          hasFile: true,
-        };
-      }
-      if (value instanceof File) {
-        return {
-          id,
-          questionId,
-          inputValue: null,
-          selectedDecisionId: null,
-          selectedDecisionIds: null,
-          latitude: null,
-          longitude: null,
-          hasFile: true,
-        };
-      }
-      if (Array.isArray(value)) {
-        return {
-          id,
-          questionId,
-          selectedDecisionIds: value,
-          selectedDecisionId: null,
-          inputValue: null,
-          latitude: null,
-          longitude: null,
-          hasFile: false,
-        };
-      }
-      if (
-        value &&
-        typeof value === 'object' &&
-        (typeof (value as any).referenceX === 'number' ||
-          Array.isArray((value as any).measurements) ||
-          (value as any).file instanceof File)
-      ) {
-        const v = value as any;
-        return {
-          id,
-          questionId,
-          referenceX: typeof v.referenceX === 'number' ? v.referenceX : null,
-          referenceY: typeof v.referenceY === 'number' ? v.referenceY : null,
-          measurements: Array.isArray(v.measurements)
-            ? v.measurements.map((m: any, i: number) => ({
-                x: m.x,
-                y: m.y,
-                value: m.value,
-                order: typeof m.order === 'number' ? m.order : i,
-              }))
-            : [],
-          inputValue: null,
-          selectedDecisionId: null,
-          selectedDecisionIds: null,
-          latitude: null,
-          longitude: null,
-          hasFile: v.file instanceof File,
-        };
-      }
-      if (
-        value &&
-        typeof value === 'object' &&
-        typeof (value as any).latitude === 'number' &&
-        typeof (value as any).longitude === 'number'
-      ) {
-        return {
-          id,
-          questionId,
-          inputValue: null,
-          selectedDecisionId: null,
-          selectedDecisionIds: null,
-          latitude: (value as any).latitude,
-          longitude: (value as any).longitude,
-          hasFile: false,
-        };
-      }
-      return {
+      const base = {
         id,
         questionId,
-        inputValue: value,
+        inputValue: null,
         selectedDecisionId: null,
         selectedDecisionIds: null,
         latitude: null,
         longitude: null,
         hasFile: false,
-      };
+      } as const;
+
+      if (isFileArray(value)) {
+        return { ...base, hasFile: true };
+      }
+      if (isMultiMeasurement(value)) {
+        return {
+          ...base,
+          referenceX: typeof value.referenceX === 'number' ? value.referenceX : null,
+          referenceY: typeof value.referenceY === 'number' ? value.referenceY : null,
+          measurements: value.measurements.map((m, i) => ({
+            x: m.x,
+            y: m.y,
+            value: m.value,
+            order: typeof m.order === 'number' ? m.order : i,
+          })),
+          hasFile: value.file instanceof File,
+        };
+      }
+      if (isGeo(value)) {
+        return { ...base, latitude: value.latitude, longitude: value.longitude };
+      }
+      if (Array.isArray(value)) {
+        // string[] — multi_select
+        return { ...base, selectedDecisionIds: value };
+      }
+      // string — text / single_select
+      return { ...base, inputValue: value };
     },
   );
 
@@ -211,16 +211,12 @@ export async function submitSurvey(
       (r) => r.questionId === questionId,
     );
     if (!responseEntry) return;
-    const files = Array.isArray(value)
+    const files: File[] = isFileArray(value)
       ? value
-      : value instanceof File
-        ? [value]
-        : value && typeof value === 'object' && (value as any).file instanceof File
-          ? [(value as any).file]
-          : [];
-    files.forEach((file: any) => {
-      if (file instanceof File) formData.append(responseEntry.id, file);
-    });
+      : isMultiMeasurement(value) && value.file instanceof File
+        ? [value.file]
+        : [];
+    files.forEach((file) => formData.append(responseEntry.id, file));
   });
 
   const res = await fetch(`${API_BASE}/site-surveys/submit-response`, {

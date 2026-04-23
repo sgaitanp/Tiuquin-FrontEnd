@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import {
   getSiteSurveysWithResponses,
-  getSiteSurveysWithResponsesByStatus,
   getSiteSurveyResponses,
   updateSiteSurveyStatus,
 } from '@/services/surveyService';
 import ResponseDetail from './ResponseDetail';
 import { Ms } from './shared';
+import type { SiteSurvey, SiteSurveyStatus } from '@/types/project';
+import type { ResponseDetail as ResponseDetailData } from '@/types/response';
 
 function useMaterialSymbols() {
   useEffect(() => {
@@ -24,7 +25,7 @@ function useMaterialSymbols() {
   }, []);
 }
 
-const STATUSES = [
+const STATUSES: { value: SiteSurveyStatus; label: string }[] = [
   { value: 'PENDING_APPROVAL', label: 'Pending Approval' },
   { value: 'APPROVED', label: 'Approved' },
   { value: 'CLOSED', label: 'Closed' },
@@ -44,17 +45,17 @@ const STATUS_COLORS: Record<
 export default function SurveyResponsesDashboard() {
   useMaterialSymbols();
 
-  const [surveys, setSurveys] = useState<any[] | null>(null);
-  const [selected, setSelected] = useState<any>(null);
-  const [responses, setResponses] = useState<any[]>([]);
+  const [surveys, setSurveys] = useState<SiteSurvey[] | null>(null);
+  const [selected, setSelected] = useState<SiteSurvey | null>(null);
+  const [responses, setResponses] = useState<ResponseDetailData[]>([]);
   const [loading, setLoading] = useState(false);
   const [listLoading, setListLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('PENDING_APPROVAL');
-  const [changingStatus, setChangingStatus] = useState<any>(null);
+  const [status, setStatus] = useState<SiteSurveyStatus>('PENDING_APPROVAL');
+  const [changingStatus, setChangingStatus] = useState<SiteSurvey | null>(null);
   const [statusSaving, setStatusSaving] = useState(false);
 
-  const [allSurveys, setAllSurveys] = useState<any[] | null>(null);
+  const [allSurveys, setAllSurveys] = useState<SiteSurvey[] | null>(null);
 
   useEffect(() => {
     setListLoading(true);
@@ -72,7 +73,7 @@ export default function SurveyResponsesDashboard() {
   useEffect(() => {
     setSelected(null);
     setResponses([]);
-    setSurveys((allSurveys ?? []).filter((s: any) => s.status === status));
+    setSurveys((allSurveys ?? []).filter((s) => s.status === status));
   }, [status, allSurveys]);
 
   useEffect(() => {
@@ -96,8 +97,6 @@ export default function SurveyResponsesDashboard() {
     const q = search.toLowerCase();
     return !q || s.name?.toLowerCase().includes(q);
   });
-
-  const statusCfg = STATUS_COLORS[status] ?? STATUS_COLORS.PENDING_APPROVAL;
 
   return (
     <div
@@ -302,7 +301,7 @@ export default function SurveyResponsesDashboard() {
                           textOverflow: 'ellipsis',
                         }}
                       >
-                        {s.project?.name ?? s.projectName ?? ''}
+                        {s.projectName ?? ''}
                       </p>
                     </div>
                     <span
@@ -597,11 +596,11 @@ export default function SurveyResponsesDashboard() {
                       document.getElementById(
                         'new-status-select',
                       ) as HTMLSelectElement
-                    ).value;
+                    ).value as SiteSurveyStatus;
                     setStatusSaving(true);
                     try {
                       await updateSiteSurveyStatus(changingStatus.id, sel);
-                      setSelected((prev: any) => ({ ...prev, status: sel }));
+                      setSelected((prev) => (prev ? { ...prev, status: sel } : prev));
                       setSurveys((prev) =>
                         (prev || []).map((s) =>
                           s.id === changingStatus.id

@@ -6,6 +6,12 @@ import {
   useImperativeHandle,
   forwardRef,
 } from 'react';
+import type * as LeafletNS from 'leaflet';
+
+// Leaflet is loaded from a CDN at runtime (see the script tag below),
+// so `L` doesn't exist as an npm dep — only its types do. We alias
+// `typeof LeafletNS` as `LeafletStatic` for the top-level `L.*` calls.
+type LeafletStatic = typeof LeafletNS;
 
 interface Props {
   initialLat?: number;
@@ -21,9 +27,9 @@ export interface LocationMapPickerRef {
 const LocationMapPicker = forwardRef<LocationMapPickerRef, Props>(
   ({ initialLat, initialLng, onPick }, ref) => {
     const mapRef = useRef<HTMLDivElement>(null);
-    const leafletRef = useRef<any>(null);
-    const mapInstance = useRef<any>(null);
-    const markerRef = useRef<any>(null);
+    const leafletRef = useRef<LeafletStatic | null>(null);
+    const mapInstance = useRef<LeafletNS.Map | null>(null);
+    const markerRef = useRef<LeafletNS.Marker | null>(null);
     const [query, setQuery] = useState('');
     const [searching, setSearching] = useState(false);
     const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
@@ -31,7 +37,7 @@ const LocationMapPicker = forwardRef<LocationMapPickerRef, Props>(
     );
     const [error, setError] = useState('');
 
-    const makeIcon = (L: any) =>
+    const makeIcon = (L: LeafletStatic) =>
       L.icon({
         iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
         iconRetinaUrl:
@@ -42,14 +48,15 @@ const LocationMapPicker = forwardRef<LocationMapPickerRef, Props>(
         iconAnchor: [12, 41],
       });
 
-    const placeMarker = (L: any, lat: number, lng: number) => {
+    const placeMarker = (L: LeafletStatic, lat: number, lng: number) => {
+      if (!mapInstance.current) return;
       if (markerRef.current) markerRef.current.remove();
       markerRef.current = L.marker([lat, lng], {
         icon: makeIcon(L),
         draggable: true,
       }).addTo(mapInstance.current);
-      markerRef.current.on('dragend', (e: any) => {
-        const pos = e.target.getLatLng();
+      markerRef.current.on('dragend', (e: LeafletNS.DragEndEvent) => {
+        const pos = (e.target as LeafletNS.Marker).getLatLng();
         const r = {
           lat: parseFloat(pos.lat.toFixed(6)),
           lng: parseFloat(pos.lng.toFixed(6)),
@@ -114,14 +121,15 @@ const LocationMapPicker = forwardRef<LocationMapPickerRef, Props>(
       }
 
       const loadLeaflet = () =>
-        new Promise<any>((resolve) => {
-          if ((window as any).L) {
-            resolve((window as any).L);
+        new Promise<LeafletStatic>((resolve) => {
+          const w = window as unknown as { L?: LeafletStatic };
+          if (w.L) {
+            resolve(w.L);
             return;
           }
           const script = document.createElement('script');
           script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-          script.onload = () => resolve((window as any).L);
+          script.onload = () => resolve(w.L!);
           document.head.appendChild(script);
         });
 
@@ -146,8 +154,8 @@ const LocationMapPicker = forwardRef<LocationMapPickerRef, Props>(
             icon: makeIcon(L),
             draggable: true,
           }).addTo(map);
-          markerRef.current.on('dragend', (e: any) => {
-            const pos = e.target.getLatLng();
+          markerRef.current.on('dragend', (e: LeafletNS.DragEndEvent) => {
+            const pos = (e.target as LeafletNS.Marker).getLatLng();
             const r = {
               lat: parseFloat(pos.lat.toFixed(6)),
               lng: parseFloat(pos.lng.toFixed(6)),
@@ -157,7 +165,7 @@ const LocationMapPicker = forwardRef<LocationMapPickerRef, Props>(
           });
         }
 
-        map.on('click', (e: any) => {
+        map.on('click', (e: LeafletNS.LeafletMouseEvent) => {
           placeMarker(L, e.latlng.lat, e.latlng.lng);
         });
       });
@@ -270,7 +278,7 @@ const LocationMapPicker = forwardRef<LocationMapPickerRef, Props>(
           </div>
         ) : (
           <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
-            Use "Find on Map" or type an address and search to pin the location.
+            Use &ldquo;Find on Map&rdquo; or type an address and search to pin the location.
           </p>
         )}
       </div>

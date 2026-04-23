@@ -1,13 +1,17 @@
 import React from 'react';
-import { Ms } from './shared';
 import {
   downloadFile,
   previewFile,
   getFileUrl,
   getAuthHeaders,
 } from '@/services/fileService';
+import type {
+  QuestionAnswer,
+  ResponseFile,
+  SectionAnswers,
+} from '@/types/response';
 
-function FileCard({ file }: { file: any }) {
+function FileCard({ file }: { file: ResponseFile }) {
   const isImage = file.fileType?.startsWith('image/');
   const isPdf = file.fileType === 'application/pdf';
   const fmt = (bytes: number) =>
@@ -176,12 +180,12 @@ function FileCard({ file }: { file: any }) {
   );
 }
 
-function MeasurementOverlay({ qa }: { qa: any }) {
+function MeasurementOverlay({ qa }: { qa: QuestionAnswer }) {
   // The crew member uploaded the floor plan with their response — pick the first
   // attached image file.
   const imageFile =
     Array.isArray(qa.files)
-      ? qa.files.find((f: any) => f.fileType?.startsWith('image/')) ?? qa.files[0]
+      ? qa.files.find((f) => f.fileType?.startsWith('image/')) ?? qa.files[0]
       : null;
   const imageFileId: string | null = imageFile?.id ?? null;
   const measurements: Array<{ x: number; y: number; value: number; order: number }> =
@@ -264,7 +268,7 @@ function MeasurementOverlay({ qa }: { qa: any }) {
         </p>
         {hasRef && (
           <p style={{ fontSize: 12, color: '#0f172a', margin: '0 0 4px' }}>
-            {referenceLabel}: ({Math.round(qa.referenceX)}, {Math.round(qa.referenceY)})
+            {referenceLabel}: ({Math.round(qa.referenceX!)}, {Math.round(qa.referenceY!)})
           </p>
         )}
         <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: '#374151' }}>
@@ -318,8 +322,8 @@ function MeasurementOverlay({ qa }: { qa: any }) {
         )}
         {hasRef && natural && rendered && (
           <OverlayDot
-            x={qa.referenceX * scaleX}
-            y={qa.referenceY * scaleY}
+            x={qa.referenceX! * scaleX}
+            y={qa.referenceY! * scaleY}
             color="#db2777"
             icon="my_location"
             label={referenceLabel}
@@ -414,7 +418,7 @@ function OverlayDot({
   );
 }
 
-function QuestionCard({ qa }: { qa: any }) {
+function QuestionCard({ qa }: { qa: QuestionAnswer }) {
   const hasFiles = qa.files && qa.files.length > 0;
   const hasGeo =
     typeof qa.latitude === 'number' && typeof qa.longitude === 'number';
@@ -539,7 +543,7 @@ function QuestionCard({ qa }: { qa: any }) {
             gap: 10,
           }}
         >
-          {qa.files.map((file: any) => (
+          {qa.files?.map((file) => (
             <FileCard key={file.id} file={file} />
           ))}
         </div>
@@ -571,7 +575,7 @@ export default function ResponseSection({
   section,
   index,
 }: {
-  section: any;
+  section: SectionAnswers;
   index: number;
 }) {
   const questionAnswers = section.questionAnswers ?? [];
@@ -632,7 +636,7 @@ export default function ResponseSection({
           paddingLeft: 38,
         }}
       >
-        {questionAnswers.map((qa: any) => (
+        {questionAnswers.map((qa) => (
           <QuestionCard key={qa.questionId} qa={qa} />
         ))}
         {questionAnswers.length === 0 && (

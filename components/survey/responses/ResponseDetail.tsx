@@ -1,10 +1,11 @@
 import { Ms, fmtDate, fmtTime } from './shared';
 import ResponseSection from './ResponseSection';
+import type { ResponseDetail as ResponseDetailData } from '@/types/response';
 
-export default function ResponseDetail({ detail }: { detail: any }) {
+export default function ResponseDetail({ detail }: { detail: ResponseDetailData }) {
   const sections = detail.sections ?? [];
   const totalAnswers = sections.reduce(
-    (acc: number, sec: any) => acc + (sec.questionAnswers?.length ?? 0),
+    (acc, sec) => acc + (sec.questionAnswers?.length ?? 0),
     0,
   );
 
@@ -150,7 +151,7 @@ export default function ResponseDetail({ detail }: { detail: any }) {
           maxWidth: 820,
         }}
       >
-        {sections.map((sec: any, i: number) => (
+        {sections.map((sec, i) => (
           <ResponseSection key={sec.sectionId ?? i} section={sec} index={i} />
         ))}
       </div>

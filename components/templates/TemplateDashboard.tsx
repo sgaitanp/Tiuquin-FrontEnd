@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createTemplate as createTemplateLocal } from '@/actions/templateActions'
-import { getTemplates, getTemplateById } from '@/services/templateService'
-import { Ms }              from './shared'
-import TemplateList        from './TemplateList'
-import TemplateBuilder     from './TemplateBuilder'
-import CreateTemplateModal from './CreateTemplateModal'
+import { getTemplates, getTemplateById, createTemplate } from '@/services/templateService'
+import type { Template, TemplateGroup } from '@/types/template'
+import { Ms }              from './common/shared'
+import TemplateList        from './panels/TemplateList'
+import TemplateBuilder     from './panels/TemplateBuilder'
+import CreateTemplateModal from './modals/CreateTemplateModal'
 
 function useMaterialSymbols() {
   useEffect(() => {
@@ -23,8 +23,8 @@ function useMaterialSymbols() {
 export default function TemplateDashboard() {
   useMaterialSymbols()
 
-  const [groups,   setGroups]   = useState<any[]>([])
-  const [selected, setSelected] = useState<any>(null)
+  const [groups,   setGroups]   = useState<TemplateGroup[]>([])
+  const [selected, setSelected] = useState<Template | null>(null)
   const [search,   setSearch]   = useState('')
   const [creating, setCreating] = useState(false)
   const [loading,  setLoading]  = useState(true)
@@ -33,8 +33,8 @@ export default function TemplateDashboard() {
     setLoading(true)
     try {
       const templates = await getTemplates()
-      const groupMap: Record<string, any> = {}
-      templates.forEach((t: any) => {
+      const groupMap: Record<string, TemplateGroup> = {}
+      templates.forEach((t) => {
         const gid = t.groupId ?? t.id
         if (!groupMap[gid]) groupMap[gid] = { groupId: gid, name: t.name, versions: [] }
         groupMap[gid].versions.push(t)
@@ -47,25 +47,13 @@ export default function TemplateDashboard() {
 
   useEffect(() => { load() }, [])
 
-  const handleUpdated = async (updated: any) => {
+  const handleUpdated = async (updated: Template) => {
     await load()
     setSelected(updated)
   }
 
-  const handleNewVersion = async (newT: any) => {
-    await load()
-    setSelected(newT)
-  }
-
-  const handleDeleted = async (groupId: string, deletedVersionId?: string) => {
-    await load()
-    if (!deletedVersionId || selected?.id === deletedVersionId) {
-      setSelected(null)
-    }
-  }
-
   const handleCreate = async (name: string) => {
-    const newT = await createTemplateLocal({ name })
+    const newT = await createTemplate({ name, status: 'IN_DESIGN' })
     setCreating(false)
     await load()
     setSelected(newT)
@@ -91,7 +79,7 @@ export default function TemplateDashboard() {
         selectedId={selected?.id ?? null}
         search={search}
         onSearch={setSearch}
-        onSelect={async (t: any) => {
+        onSelect={async (t) => {
           try {
             const full = await getTemplateById(t.id)
             setSelected(full)
@@ -100,7 +88,6 @@ export default function TemplateDashboard() {
           }
         }}
         onNew={() => setCreating(true)}
-        onDeleted={handleDeleted}
       />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -115,7 +102,6 @@ export default function TemplateDashboard() {
             key={selected.id}
             template={selected}
             onUpdated={handleUpdated}
-            onNewVersion={handleNewVersion}
           />
         )}
       </div>
