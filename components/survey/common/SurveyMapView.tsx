@@ -15,10 +15,13 @@ export default function SurveyMapView({
   lat,
   lng,
   label,
+  showPopup = true,
 }: {
   lat: number;
   lng: number;
   label: string;
+  /** When false, only the marker pin renders — no popup. */
+  showPopup?: boolean;
 }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<LeafletNS.Map | null>(null);
@@ -54,7 +57,7 @@ export default function SurveyMapView({
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
       }).addTo(map);
-      L.marker([lat, lng], {
+      const marker = L.marker([lat, lng], {
         icon: L.icon({
           iconUrl:
             'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -65,16 +68,16 @@ export default function SurveyMapView({
           iconSize: [25, 41],
           iconAnchor: [12, 41],
         }),
-      })
-        .addTo(map)
-        .bindPopup(label)
-        .openPopup();
+      }).addTo(map);
+      if (showPopup) {
+        marker.bindPopup(label).openPopup();
+      }
     });
     return () => {
       mapInstance.current?.remove();
       mapInstance.current = null;
     };
-  }, [lat, lng, label]);
+  }, [lat, lng, label, showPopup]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

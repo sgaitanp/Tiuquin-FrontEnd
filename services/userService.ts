@@ -1,10 +1,7 @@
 import { Status, type CreateUserInput, type User } from "@/types/user"
+import { getToken } from "@/lib/auth"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1"
-
-function getToken(): string {
-  return sessionStorage.getItem("token") ?? ""
-}
 
 function authHeaders() {
   return {

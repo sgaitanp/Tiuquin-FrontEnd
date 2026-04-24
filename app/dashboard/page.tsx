@@ -1,17 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getCurrentUser } from '@/lib/auth';
+import type { CurrentUser } from '@/types/auth';
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<{ name: string; type: string } | null>(null);
+  const [user, setUser] = useState<CurrentUser | null>(null);
 
   useEffect(() => {
-    try {
-      const stored = JSON.parse(
-        sessionStorage.getItem('currentUser') ?? 'null',
-      );
-      setUser(stored);
-    } catch {}
+    setUser(getCurrentUser());
   }, []);
 
   const fmtRole = (role: string) =>

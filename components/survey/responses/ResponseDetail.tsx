@@ -10,7 +10,7 @@ export default function ResponseDetail({ detail }: { detail: ResponseDetailData 
   );
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto' }}>
+    <div style={{ height: '100%', overflowY: 'auto' }}>
       {/* Sticky header */}
       <div
         style={{
@@ -53,7 +53,8 @@ export default function ResponseDetail({ detail }: { detail: ResponseDetailData 
                   fontWeight: 500,
                 }}
               >
-                {detail.responseId}
+                <span style={{ fontWeight: 500 }}>Response ID:</span>{' '}
+                <span style={{ fontFamily: 'monospace' }}>{detail.responseId}</span>
               </span>
             </p>
             <h2

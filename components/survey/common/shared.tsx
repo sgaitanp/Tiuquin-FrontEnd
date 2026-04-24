@@ -29,7 +29,7 @@ export const inp = (err = false) => ({
 
 export function completionOf(template: Template | null | undefined, responses: Record<string, QuestionValue> | null | undefined) {
   if (!template || !responses) return 0
-  const primary = template.sections.flatMap((s) => s.questions.filter((q) => !q.isFollowUp))
+  const primary = template.sections.flatMap((s) => s.questions.filter((q) => !q.followUp))
   if (!primary.length) return 0
   const answered = primary.filter((q) => {
     const v = responses[q.id]

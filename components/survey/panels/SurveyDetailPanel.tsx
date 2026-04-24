@@ -3,8 +3,26 @@
 import SurveyFiles from '../common/SurveyFiles';
 import SurveyMapView from '../common/SurveyMapView';
 import { fmtDate, STATUS_CFG } from '../common/shared';
+import { TYPE_CFG } from '@/components/templates/common/shared';
 import type { SiteSurvey } from '@/types/project';
-import type { Option, Template } from '@/types/template';
+import type { Option, Question, QuestionType, Template } from '@/types/template';
+
+function QuestionTypePill({ type }: { type: string }) {
+  const cfg = TYPE_CFG[type as QuestionType];
+  if (!cfg) {
+    return (
+      <span style={{ fontSize: 10, color: '#94a3b8', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 4, padding: '1px 6px', flexShrink: 0, fontFamily: 'monospace' }}>
+        {type}
+      </span>
+    );
+  }
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: cfg.color, background: `${cfg.color}15`, border: `1px solid ${cfg.color}33`, borderRadius: 5, padding: '1px 7px', flexShrink: 0, fontWeight: 500 }}>
+      <Ms icon={cfg.icon} style={{ fontSize: 11, color: cfg.color }} />
+      {cfg.label}
+    </span>
+  );
+}
 
 const Ms = ({
   icon,
@@ -500,8 +518,7 @@ export default function SurveyDetailPanel({
                             marginLeft: 'auto',
                           }}
                         >
-                          {sec.questions?.filter((q) => !q.isFollowUp)
-                            .length ?? 0}{' '}
+                          {sec.questions?.filter((q) => !q.followUp).length ?? 0}{' '}
                           questions
                         </span>
                       </div>
@@ -514,9 +531,11 @@ export default function SurveyDetailPanel({
                           gap: 6,
                         }}
                       >
-                        {(sec.questions ?? [])
-                          .filter((q) => !q.isFollowUp)
-                          .map((q, qi) => (
+                        {(() => {
+                          const qs = sec.questions ?? [];
+                          const byId = new Map<string, Question>(qs.map((qq) => [qq.id, qq]));
+                          const topLevel = qs.filter((qq) => !qq.followUp);
+                          return topLevel.map((q, qi) => (
                             <div
                               key={q.id ?? qi}
                               style={{
@@ -540,7 +559,7 @@ export default function SurveyDetailPanel({
                               >
                                 {qi + 1}.
                               </span>
-                              <div style={{ flex: 1 }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
                                 <p
                                   style={{
                                     fontSize: 12,
@@ -550,61 +569,80 @@ export default function SurveyDetailPanel({
                                 >
                                   {q.questionText}
                                 </p>
-                                {q.options && (
+                                {q.options && q.options.length > 0 && (
                                   <div
                                     style={{
                                       display: 'flex',
-                                      flexWrap: 'wrap',
+                                      flexDirection: 'column',
                                       gap: 4,
                                       marginTop: 6,
                                     }}
                                   >
-                                    {q.options.map((o: Option) => (
-                                      <span
-                                        key={o.id}
-                                        style={{
-                                          fontSize: 10,
-                                          color: '#64748b',
-                                          background: '#fff',
-                                          border: '1px solid #e2e8f0',
-                                          borderRadius: 4,
-                                          padding: '1px 7px',
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: 3,
-                                        }}
-                                      >
-                                        {o.text}
-                                        {o.followUpQuestionId && (
-                                          <Ms
-                                            icon="subdirectory_arrow_right"
+                                    {q.options.map((o: Option) => {
+                                      const followUp = o.followUpQuestionId ? byId.get(o.followUpQuestionId) : null;
+                                      return (
+                                        <div key={o.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                          <span
                                             style={{
-                                              fontSize: 11,
-                                              color: '#f59e0b',
+                                              fontSize: 10,
+                                              color: '#64748b',
+                                              background: '#fff',
+                                              border: '1px solid #e2e8f0',
+                                              borderRadius: 4,
+                                              padding: '2px 7px',
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                              gap: 4,
+                                              alignSelf: 'flex-start',
                                             }}
-                                          />
-                                        )}
-                                      </span>
-                                    ))}
+                                          >
+                                            {o.text}
+                                            {followUp && (
+                                              <Ms icon="subdirectory_arrow_right" style={{ fontSize: 11, color: '#f59e0b' }} />
+                                            )}
+                                          </span>
+                                          {followUp && (
+                                            <div
+                                              style={{
+                                                marginLeft: 18,
+                                                display: 'flex',
+                                                alignItems: 'flex-start',
+                                                gap: 8,
+                                                padding: '6px 10px',
+                                                borderRadius: 6,
+                                                background: '#fffbeb',
+                                                border: '1px solid #fde68a',
+                                              }}
+                                            >
+                                              <Ms icon="subdirectory_arrow_right" style={{ fontSize: 13, color: '#f59e0b', marginTop: 1, flexShrink: 0 }} />
+                                              <div style={{ flex: 1, minWidth: 0 }}>
+                                                <p style={{ fontSize: 11, color: '#78350f', margin: 0 }}>
+                                                  <span style={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: 9, marginRight: 6 }}>Follow-up</span>
+                                                  {followUp.questionText}
+                                                </p>
+                                                {followUp.options && followUp.options.length > 0 && (
+                                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                                                    {followUp.options.map((fo) => (
+                                                      <span key={fo.id} style={{ fontSize: 10, color: '#78350f', background: '#fff', border: '1px solid #fde68a', borderRadius: 4, padding: '1px 6px' }}>
+                                                        {fo.text}
+                                                      </span>
+                                                    ))}
+                                                  </div>
+                                                )}
+                                              </div>
+                                              <QuestionTypePill type={followUp.type} />
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 )}
                               </div>
-                              <span
-                                style={{
-                                  fontSize: 10,
-                                  color: '#94a3b8',
-                                  background: '#fff',
-                                  border: '1px solid #e2e8f0',
-                                  borderRadius: 4,
-                                  padding: '1px 6px',
-                                  flexShrink: 0,
-                                  fontFamily: 'monospace',
-                                }}
-                              >
-                                {q.type}
-                              </span>
+                              <QuestionTypePill type={q.type} />
                             </div>
-                          ))}
+                          ));
+                        })()}
                       </div>
                     </div>
                   ))}

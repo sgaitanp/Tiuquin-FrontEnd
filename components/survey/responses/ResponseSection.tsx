@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   downloadFile,
   previewFile,
@@ -10,6 +10,8 @@ import type {
   ResponseFile,
   SectionAnswers,
 } from '@/types/response';
+import { fmtQuestionType } from './shared';
+import SurveyMapView from '../common/SurveyMapView';
 
 function FileCard({ file }: { file: ResponseFile }) {
   const isImage = file.fileType?.startsWith('image/');
@@ -423,7 +425,7 @@ function QuestionCard({ qa }: { qa: QuestionAnswer }) {
   const hasGeo =
     typeof qa.latitude === 'number' && typeof qa.longitude === 'number';
   const displayValue = qa.selectedOptionText ?? qa.inputValue;
-  const isMultiMeasurement = qa.questionType === 'MULTI_MEASUREMENT';
+  const isMultiMeasurement = qa.type === 'MULTI_MEASUREMENT';
   const hasMeasurements =
     isMultiMeasurement &&
     Array.isArray(qa.measurements) &&
@@ -461,16 +463,16 @@ function QuestionCard({ qa }: { qa: QuestionAnswer }) {
         <span
           style={{
             fontSize: 10,
-            color: '#94a3b8',
+            color: '#64748b',
             background: '#f8fafc',
             border: '1px solid #e2e8f0',
             borderRadius: 5,
-            padding: '2px 6px',
+            padding: '2px 8px',
             flexShrink: 0,
-            fontFamily: 'monospace',
+            fontWeight: 500,
           }}
         >
-          {qa.questionType}
+          {fmtQuestionType(qa.type)}
         </span>
       </div>
 
@@ -505,33 +507,14 @@ function QuestionCard({ qa }: { qa: QuestionAnswer }) {
 
       {/* Geolocation */}
       {hasGeo && (
-        <a
-          href={`https://www.google.com/maps/search/?api=1&query=${qa.latitude},${qa.longitude}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            background: '#f0fdf4',
-            border: '1px solid #bbf7d0',
-            borderRadius: 8,
-            padding: '8px 12px',
-            fontSize: 13,
-            color: '#0f766e',
-            textDecoration: 'none',
-            fontWeight: 500,
-            marginBottom: hasFiles ? 10 : 0,
-          }}
-        >
-          <span
-            className="material-symbols-outlined"
-            style={{ fontSize: 16, color: '#10b981' }}
-          >
-            location_on
-          </span>
-          Lat: {qa.latitude} · Lng: {qa.longitude}
-        </a>
+        <div style={{ marginBottom: hasFiles ? 10 : 0 }}>
+          <SurveyMapView
+            lat={qa.latitude as number}
+            lng={qa.longitude as number}
+            label={qa.questionText}
+            showPopup={false}
+          />
+        </div>
       )}
 
       {/* Files */}
@@ -582,15 +565,26 @@ export default function ResponseSection({
   const [title, subtitle] = (section.sectionName ?? '').includes(' - ')
     ? (section.sectionName ?? '').split(' - ')
     : [section.sectionName ?? `Section ${index + 1}`, null];
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <div>
-      <div
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: 10,
-          marginBottom: 18,
+          marginBottom: expanded ? 18 : 0,
+          width: '100%',
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
+          textAlign: 'left',
+          color: 'inherit',
         }}
       >
         <div
@@ -609,7 +603,7 @@ export default function ResponseSection({
             {index + 1}
           </span>
         </div>
-        <div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <h3
             style={{
               fontSize: 13,
@@ -626,25 +620,42 @@ export default function ResponseSection({
             </p>
           )}
         </div>
-      </div>
+        <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500, flexShrink: 0 }}>
+          {questionAnswers.length} answer{questionAnswers.length !== 1 ? 's' : ''}
+        </span>
+        <span
+          className="material-symbols-outlined"
+          style={{
+            fontSize: 22,
+            color: '#64748b',
+            transition: 'transform 0.15s',
+            transform: expanded ? 'rotate(180deg)' : 'none',
+            flexShrink: 0,
+          }}
+        >
+          keyboard_arrow_down
+        </span>
+      </button>
 
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 14,
-          paddingLeft: 38,
-        }}
-      >
-        {questionAnswers.map((qa) => (
-          <QuestionCard key={qa.questionId} qa={qa} />
-        ))}
-        {questionAnswers.length === 0 && (
-          <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>
-            No answers in this section.
-          </p>
-        )}
-      </div>
+      {expanded && (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+            paddingLeft: 38,
+          }}
+        >
+          {questionAnswers.map((qa) => (
+            <QuestionCard key={qa.questionId} qa={qa} />
+          ))}
+          {questionAnswers.length === 0 && (
+            <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>
+              No answers in this section.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

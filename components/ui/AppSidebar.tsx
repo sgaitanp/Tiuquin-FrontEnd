@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { clearAuthSession, getCurrentUser } from '@/lib/auth';
 
 function Ms({ icon, className }: { icon: string; className?: string }) {
   return (
@@ -52,12 +53,7 @@ export function AppSidebar() {
   const [role, setRole] = React.useState('');
 
   React.useEffect(() => {
-    try {
-      const user = JSON.parse(sessionStorage.getItem('currentUser') ?? 'null');
-      setRole(user?.type ?? '');
-    } catch {
-      setRole('');
-    }
+    setRole(getCurrentUser()?.type ?? '');
   }, []);
 
   const navItems = ALL_NAV_ITEMS.filter((item) => item.roles.includes(role));
@@ -96,8 +92,7 @@ export function AppSidebar() {
       <div className="border-t p-3">
         <button
           onClick={() => {
-            sessionStorage.removeItem('token');
-            sessionStorage.removeItem('currentUser');
+            clearAuthSession();
             router.push('/login');
           }}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"

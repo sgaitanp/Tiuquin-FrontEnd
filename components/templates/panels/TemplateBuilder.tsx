@@ -1,34 +1,90 @@
 import { useState } from 'react';
 import { Ms, StatusBadge, STATUS_CFG, fmtDate } from '../common/shared';
 import SectionCard from './SectionCard';
-import { updateTemplateStatus } from '@/services/templateService';
-import type { Section, Template, TemplateStatus } from '@/types/template';
+import QuestionEditor from '../modals/QuestionEditor';
+import { createTemplate, updateTemplateStatus } from '@/services/templateService';
+import {
+  TEMPLATE_STATUSES,
+  type Question,
+  type Section,
+  type Template,
+  type TemplateStatus,
+} from '@/types/template';
+
+/**
+ * Rewrites `followUp` flags and drops dangling `followUpQuestionId`
+ * refs so the section stays consistent after any question edit.
+ */
+function reconcileSection(s: Section): Section {
+  const existing = new Set(s.questions.map((q) => q.id));
+  const questions = s.questions.map((q) => {
+    if (q.type === 'single_select' && q.options) {
+      return {
+        ...q,
+        options: q.options.map((o) => ({
+          ...o,
+          followUpQuestionId:
+            o.followUpQuestionId && existing.has(o.followUpQuestionId)
+              ? o.followUpQuestionId
+              : null,
+        })),
+      };
+    }
+    return q;
+  });
+  const linked = new Set<string>();
+  for (const q of questions) {
+    if (q.type === 'single_select' && q.options) {
+      for (const o of q.options) {
+        if (o.followUpQuestionId) linked.add(o.followUpQuestionId);
+      }
+    }
+  }
+  return {
+    ...s,
+    questions: questions.map((q, i) => ({
+      ...q,
+      order: i + 1,
+      followUp: linked.has(q.id),
+    })),
+  };
+}
 
 const STATUS_TRANSITIONS: Record<TemplateStatus, TemplateStatus[]> = {
-  IN_DESIGN: ['IN_REVISION'],
-  IN_REVISION: ['IN_DESIGN', 'APPROVED'],
-  APPROVED: [],
+  DRAFT:    ['APPROVED'],
+  APPROVED: ['ARCHIVED'],
+  ARCHIVED: [],
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  IN_REVISION: 'Send to Revision',
-  IN_DESIGN: 'Back to Design',
+  DRAFT:    'Back to Draft',
   APPROVED: 'Approve',
+  ARCHIVED: 'Archive',
 };
 
 export default function TemplateBuilder({
   template,
   onUpdated,
+  onChange,
+  isLocalDraft = false,
+  onPromoted,
 }: {
   template: Template;
   onUpdated: (t: Template) => void;
+  onChange: (t: Template) => void;
+  isLocalDraft?: boolean;
+  onPromoted?: (oldId: string, t: Template) => void;
 }) {
   const [saving, setSaving] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
-  const [newStatus, setNewStatus] = useState<TemplateStatus>('IN_DESIGN');
+  const [newStatus, setNewStatus] = useState<TemplateStatus>('DRAFT');
   const [statusSaving, setStatusSaving] = useState(false);
+  const [editingQ, setEditingQ] = useState<
+    { q: Question | null; sectionId: string } | null
+  >(null);
 
   const sections: Section[] = template.sections ?? [];
+  const editable = template.status === 'DRAFT';
 
   const changeStatus = async (status: TemplateStatus) => {
     setSaving(true);
@@ -39,6 +95,67 @@ export default function TemplateBuilder({
       setSaving(false);
     }
   };
+
+  const saveDraft = async () => {
+    setSaving(true);
+    try {
+      const oldId = template.id;
+      const created = await createTemplate({ ...template, status: 'DRAFT' });
+      onPromoted?.(oldId, created);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const newId = () =>
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const writeSection = (s: Section) => {
+    onChange({
+      ...template,
+      sections: sections.map((x) => (x.id === s.id ? reconcileSection(s) : x)),
+    });
+  };
+
+  const deleteSection = (id: string) => {
+    onChange({
+      ...template,
+      sections: sections
+        .filter((x) => x.id !== id)
+        .map((s, i) => ({ ...s, order: i + 1 })),
+    });
+  };
+
+  const addSection = () => {
+    const s: Section = {
+      id: newId(),
+      name: `Section ${sections.length + 1}`,
+      description: '',
+      order: sections.length + 1,
+      questions: [],
+    };
+    onChange({ ...template, sections: [...sections, s] });
+  };
+
+  const saveQuestion = (q: Question, newFollowUps: Question[] = []) => {
+    if (!editingQ) return;
+    const target = sections.find((s) => s.id === editingQ.sectionId);
+    if (!target) return;
+    const withFollowUps = [...target.questions, ...newFollowUps];
+    const existingIdx = withFollowUps.findIndex((x) => x.id === q.id);
+    const nextQuestions =
+      existingIdx >= 0
+        ? withFollowUps.map((x) => (x.id === q.id ? q : x))
+        : [...withFollowUps, q];
+    writeSection({ ...target, questions: nextQuestions });
+    setEditingQ(null);
+  };
+
+  const editingSection = editingQ
+    ? sections.find((s) => s.id === editingQ.sectionId) ?? null
+    : null;
 
   const transitions = STATUS_TRANSITIONS[template.status] ?? [];
 
@@ -124,8 +241,32 @@ export default function TemplateBuilder({
                 flexWrap: 'wrap',
               }}
             >
-              {/* Status transitions */}
-              {transitions.map((s) => (
+              {/* Local-only draft: single primary action to POST it */}
+              {isLocalDraft && (
+                <button
+                  onClick={saveDraft}
+                  disabled={saving}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    borderRadius: 8,
+                    border: 'none',
+                    background: '#0f172a',
+                    color: '#fff',
+                    padding: '7px 14px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: saving ? 'default' : 'pointer',
+                  }}
+                >
+                  <Ms icon="save" style={{ fontSize: 15, color: '#fff' }} />
+                  {saving ? 'Saving…' : 'Save draft'}
+                </button>
+              )}
+
+              {/* Status transitions (backend templates only) */}
+              {!isLocalDraft && transitions.map((s) => (
                 <button
                   key={s}
                   onClick={() => changeStatus(s)}
@@ -153,10 +294,11 @@ export default function TemplateBuilder({
               ))}
 
               {/* Change Status */}
+              {!isLocalDraft && (
               <button
                 onClick={() => {
                   setNewStatus(
-                    template.status === 'APPROVED' ? 'IN_DESIGN' : 'APPROVED',
+                    template.status === 'APPROVED' ? 'DRAFT' : 'APPROVED',
                   );
                   setChangingStatus(true);
                 }}
@@ -177,6 +319,7 @@ export default function TemplateBuilder({
                 <Ms icon="swap_horiz" style={{ fontSize: 15 }} />
                 Change Status
               </button>
+              )}
             </div>
           </div>
         </div>
@@ -222,12 +365,35 @@ export default function TemplateBuilder({
               key={sec.id}
               section={sec}
               index={i}
-              readOnly={true}
-              onUpdate={() => {}}
-              onDelete={() => {}}
-              onEditQuestion={() => {}}
+              readOnly={!editable}
+              onUpdate={writeSection}
+              onDelete={() => deleteSection(sec.id)}
+              onEditQuestion={(q, sid) => setEditingQ({ q, sectionId: sid })}
             />
           ))}
+
+          {editable && (
+            <button
+              onClick={addSection}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                padding: '12px',
+                borderRadius: 10,
+                border: '1.5px dashed #cbd5e1',
+                background: 'none',
+                color: '#475569',
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
+            >
+              <Ms icon="add" style={{ fontSize: 18 }} />
+              Add section
+            </button>
+          )}
         </div>
       </div>
 
@@ -272,7 +438,7 @@ export default function TemplateBuilder({
                 marginBottom: 16,
               }}
             >
-              {(['IN_DESIGN', 'IN_REVISION', 'APPROVED'] as const).map((s) => (
+              {TEMPLATE_STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {STATUS_CFG[s].label}
                 </option>
@@ -326,6 +492,15 @@ export default function TemplateBuilder({
             </div>
           </div>
         </div>
+      )}
+
+      {editingQ && editingSection && (
+        <QuestionEditor
+          question={editingQ.q}
+          sectionQuestions={editingSection.questions}
+          onSave={saveQuestion}
+          onClose={() => setEditingQ(null)}
+        />
       )}
     </>
   );

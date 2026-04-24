@@ -38,8 +38,8 @@ export default function CreateTemplateModal({ onSave, onClose }: {
         {error && <p style={{ fontSize: 11, color: '#ef4444', margin: '4px 0 0' }}>Name is required</p>}
 
         <p style={{ fontSize: 12, color: '#94a3b8', margin: '10px 0 0' }}>
-          A new template will be created with version 1.0 in <strong>In Design</strong> status.
-          You can add sections and questions after creation.
+          A new template will start as a local <strong>Draft</strong> at version 1.0.
+          Add sections and questions, then click <strong>Save draft</strong> to send it to the server.
         </p>
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 24 }}>

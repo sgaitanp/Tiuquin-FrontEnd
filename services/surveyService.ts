@@ -5,14 +5,11 @@ import type {
   QuestionValue,
   ResponseDetail,
 } from '@/types/response';
-import type { Template } from '@/types/template';
+import { QUESTION_TYPE_TO_WIRE, type QuestionTypeWire, type Template } from '@/types/template';
+import { getCurrentUser, getToken } from '@/lib/auth';
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080/api/v1';
-
-function getToken(): string {
-  return sessionStorage.getItem('token') ?? '';
-}
 
 function authHeaders() {
   return {
@@ -96,8 +93,11 @@ export async function updateSiteSurveyStatus(
 }
 
 // Shape the backend expects for each answer in the `response` JSON blob.
+// `type` is the Jackson discriminator — backend deserialization fails
+// without it ("missing type id property 'type'").
 interface ResponseEntryDTO {
   id: string;
+  type: QuestionTypeWire;
   questionId: string;
   inputValue: string | null;
   selectedDecisionId: string | null;
@@ -141,18 +141,32 @@ function isGeo(v: QuestionValue): v is GeoValue {
 
 export async function submitSurvey(
   survey: SiteSurvey,
-  _template: Template,
+  template: Template,
   responses: Record<string, QuestionValue>,
 ) {
-  const currentUser = JSON.parse(
-    sessionStorage.getItem('currentUser') ?? 'null',
-  );
+  const currentUser = getCurrentUser();
+
+  // Backend's polymorphic deserializer needs the wire-format type on
+  // every entry. Build a questionId → type lookup from the template.
+  const typeByQuestionId = new Map<string, QuestionTypeWire>();
+  for (const section of template.sections ?? []) {
+    for (const q of section.questions ?? []) {
+      typeByQuestionId.set(q.id, QUESTION_TYPE_TO_WIRE[q.type]);
+    }
+  }
 
   const mappedResponses: ResponseEntryDTO[] = Object.entries(responses).map(
     ([questionId, value]) => {
       const id = crypto.randomUUID();
+      const type = typeByQuestionId.get(questionId);
+      if (!type) {
+        throw new Error(
+          `Cannot submit: question ${questionId} is not in template ${template.id}`,
+        );
+      }
       const base = {
         id,
+        type,
         questionId,
         inputValue: null,
         selectedDecisionId: null,
@@ -186,7 +200,11 @@ export async function submitSurvey(
         // string[] — multi_select
         return { ...base, selectedDecisionIds: value };
       }
-      // string — text / single_select
+      // string — single_select answers are option ids and belong on
+      // selectedDecisionId; everything else (text) goes in inputValue.
+      if (type === 'SINGLE_SELECT') {
+        return { ...base, selectedDecisionId: value };
+      }
       return { ...base, inputValue: value };
     },
   );
@@ -222,7 +240,7 @@ export async function submitSurvey(
   const res = await fetch(`${API_BASE}/site-surveys/submit-response`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${sessionStorage.getItem('token') ?? ''}`,
+      Authorization: `Bearer ${getToken()}`,
     },
     body: formData,
   });

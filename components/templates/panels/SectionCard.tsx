@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Ms, TYPE_CFG, inp } from '../common/shared'
+import { Ms, TYPE_CFG, inp, orderQuestionsForDisplay } from '../common/shared'
 import type { Question, Section } from '@/types/template'
 
 export default function SectionCard({ section, index, readOnly, onUpdate, onDelete, onEditQuestion }: {
@@ -87,23 +87,38 @@ export default function SectionCard({ section, index, readOnly, onUpdate, onDele
                 paddingRight: 4,
               }}
             >
-              {section.questions.map((q) => {
+              {orderQuestionsForDisplay(section.questions).map((q) => {
                 const typeCfg = TYPE_CFG[q.type] ?? TYPE_CFG.text
                 return (
-                  <div key={q.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', borderRadius: 9, border: `1px solid ${q.isFollowUp ? '#fde68a' : '#f1f5f9'}`, background: q.isFollowUp ? '#fffbeb' : '#fafafa' }}>
-                    {q.isFollowUp && (
+                  <div key={q.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', borderRadius: 9, border: `1px solid ${q.followUp ? '#fde68a' : '#f1f5f9'}`, background: q.followUp ? '#fffbeb' : '#fafafa' }}>
+                    {q.followUp && (
                       <Ms icon='subdirectory_arrow_right' style={{ fontSize: 15, color: '#f59e0b', marginTop: 2, flexShrink: 0 }} />
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: 13, fontWeight: 500, color: '#0f172a', margin: '0 0 4px', lineHeight: 1.4 }}>{q.questionText}</p>
+                      {(q.type === 'single_select' || q.type === 'multi_select') && q.options && q.options.length > 0 && (
+                        <ul style={{ margin: '4px 0 6px', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                          {q.options.map((o) => (
+                            <li key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#475569', lineHeight: 1.3 }}>
+                              <Ms
+                                icon={q.type === 'single_select' ? 'radio_button_unchecked' : 'check_box_outline_blank'}
+                                style={{ fontSize: 12, color: '#94a3b8', flexShrink: 0 }}
+                              />
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{o.text}</span>
+                              {q.type === 'single_select' && o.followUpQuestionId && (
+                                <span title='Has follow-up' style={{ display: 'inline-flex', alignItems: 'center', color: '#f59e0b' }}>
+                                  <Ms icon='subdirectory_arrow_right' style={{ fontSize: 12, color: '#f59e0b' }} />
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: typeCfg.color, background: `${typeCfg.color}15`, borderRadius: 5, padding: '1px 7px', fontWeight: 500 }}>
                           <Ms icon={typeCfg.icon} style={{ fontSize: 12, color: typeCfg.color }} />
                           {typeCfg.label}
                         </span>
-                        {(q.type === 'multi_select' || q.type === 'single_select') && (
-                          <span style={{ fontSize: 11, color: '#94a3b8' }}>{q.options?.length ?? 0} options</span>
-                        )}
                         {q.type === 'multi_measurement' && (
                           <span style={{ fontSize: 11, color: '#94a3b8' }}>
                             {q.requiredReadings ?? 0} readings · {q.measurementUnit || '—'}

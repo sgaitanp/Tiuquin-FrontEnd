@@ -10,11 +10,16 @@
  * `templateService.ts` handle the conversion.
  */
 
-/** Lifecycle state of a template version. */
+/**
+ * Lifecycle state of a template version. Matches the backend enum
+ * 1:1 — the "is this a local draft that hasn't been posted yet?"
+ * distinction lives outside the status, in `TemplateDashboard`'s
+ * `localDraftIds` set.
+ */
 export const TEMPLATE_STATUSES = [
-  'IN_DESIGN',
-  'IN_REVISION',
+  'DRAFT',
   'APPROVED',
+  'ARCHIVED',
 ] as const;
 export type TemplateStatus = (typeof TEMPLATE_STATUSES)[number];
 
@@ -24,10 +29,41 @@ export const QUESTION_TYPES = [
   'single_select',
   'multi_select',
   'file',
+  'image',
   'geolocation',
   'multi_measurement',
 ] as const;
 export type QuestionType = (typeof QUESTION_TYPES)[number];
+
+/** Wire format — UPPERCASE on the network. */
+export type QuestionTypeWire =
+  | 'TEXT'
+  | 'SINGLE_SELECT'
+  | 'MULTI_SELECT'
+  | 'FILE'
+  | 'IMAGE'
+  | 'GEOLOCATION'
+  | 'MULTI_MEASUREMENT';
+
+export const QUESTION_TYPE_TO_WIRE: Record<QuestionType, QuestionTypeWire> = {
+  text:              'TEXT',
+  single_select:     'SINGLE_SELECT',
+  multi_select:      'MULTI_SELECT',
+  file:              'FILE',
+  image:             'IMAGE',
+  geolocation:       'GEOLOCATION',
+  multi_measurement: 'MULTI_MEASUREMENT',
+};
+
+export const QUESTION_TYPE_FROM_WIRE: Record<QuestionTypeWire, QuestionType> = {
+  TEXT:              'text',
+  SINGLE_SELECT:     'single_select',
+  MULTI_SELECT:      'multi_select',
+  FILE:              'file',
+  IMAGE:             'image',
+  GEOLOCATION:       'geolocation',
+  MULTI_MEASUREMENT: 'multi_measurement',
+};
 
 /** Allowed file categories for a `file`-type question. */
 export const ACCEPTED_FILE_TYPES = [
@@ -39,6 +75,33 @@ export const ACCEPTED_FILE_TYPES = [
   'audio',
 ] as const;
 export type AcceptedFileType = (typeof ACCEPTED_FILE_TYPES)[number];
+
+/** Wire format — UPPERCASE on the network. */
+export type AcceptedFileTypeWire =
+  | 'IMAGE'
+  | 'PDF'
+  | 'DOC'
+  | 'EXCEL'
+  | 'VIDEO'
+  | 'AUDIO';
+
+export const ACCEPTED_FILE_TYPE_TO_WIRE: Record<AcceptedFileType, AcceptedFileTypeWire> = {
+  image: 'IMAGE',
+  pdf:   'PDF',
+  doc:   'DOC',
+  excel: 'EXCEL',
+  video: 'VIDEO',
+  audio: 'AUDIO',
+};
+
+export const ACCEPTED_FILE_TYPE_FROM_WIRE: Record<AcceptedFileTypeWire, AcceptedFileType> = {
+  IMAGE: 'image',
+  PDF:   'pdf',
+  DOC:   'doc',
+  EXCEL: 'excel',
+  VIDEO: 'video',
+  AUDIO: 'audio',
+};
 
 /**
  * A single choice on a `single_select` or `multi_select` question.
@@ -64,7 +127,7 @@ export interface Question {
   questionText: string;
   type: QuestionType;
   order: number;
-  isFollowUp?: boolean;
+  followUp?: boolean;
   acceptedFileType?: AcceptedFileType | null;
   options?: Option[] | null;
   requiredReadings?: number | null;

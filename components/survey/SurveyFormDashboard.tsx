@@ -6,6 +6,7 @@ import {
   getAllSiteSurveys,
 } from '@/services/surveyService';
 import { getTemplateById } from '@/services/templateService';
+import { getCurrentUser } from '@/lib/auth';
 import type { SiteSurvey } from '@/types/project';
 import type { Template } from '@/types/template';
 import SurveyList from './panels/SurveyList';
@@ -66,9 +67,7 @@ export default function SurveyFormDashboard() {
   };
 
   const loadSurveys = useCallback(() => {
-    const currentUser = JSON.parse(
-      sessionStorage.getItem('currentUser') ?? 'null',
-    );
+    const currentUser = getCurrentUser();
     const userId = currentUser?.id ?? undefined;
     const userRole = currentUser?.type ?? '';
     const canSeeAll = [
@@ -90,9 +89,7 @@ export default function SurveyFormDashboard() {
   }, []);
 
   useEffect(() => {
-    const currentUser = JSON.parse(
-      sessionStorage.getItem('currentUser') ?? 'null',
-    );
+    const currentUser = getCurrentUser();
     setRole(currentUser?.type ?? '');
     loadSurveys();
   }, []);

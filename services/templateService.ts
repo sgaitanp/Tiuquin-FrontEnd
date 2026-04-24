@@ -1,38 +1,25 @@
-import type {
-  AcceptedFileType,
-  Option,
-  Question,
-  QuestionType,
-  Section,
-  Template,
-  TemplateStatus,
+import {
+  ACCEPTED_FILE_TYPE_FROM_WIRE,
+  ACCEPTED_FILE_TYPE_TO_WIRE,
+  QUESTION_TYPE_FROM_WIRE,
+  QUESTION_TYPE_TO_WIRE,
+  type AcceptedFileTypeWire,
+  type Option,
+  type Question,
+  type QuestionTypeWire,
+  type Section,
+  type Template,
+  type TemplateStatus,
 } from "@/types/template"
+import { getToken } from "@/lib/auth"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1"
-
-function getToken(): string {
-  return sessionStorage.getItem("token") ?? ""
-}
 
 function authHeaders() {
   return {
     "Content-Type":  "application/json",
     "Authorization": `Bearer ${getToken()}`,
   }
-}
-
-// ─── Status mapping ───────────────────────────────────────────────────────────
-
-// The backend only knows DRAFT and APPROVED, so both IN_DESIGN and
-// IN_REVISION collapse to DRAFT on send.
-const STATUS_MAP: Record<TemplateStatus, string> = {
-  IN_DESIGN:   "DRAFT",
-  IN_REVISION: "DRAFT",
-  APPROVED:    "APPROVED",
-}
-
-function mapStatus(status: TemplateStatus): string {
-  return STATUS_MAP[status] ?? status
 }
 
 // ─── Shape mappers ────────────────────────────────────────────────────────────
@@ -49,10 +36,10 @@ interface SectionRequest {
 interface QuestionRequest {
   id: string
   questionText: string
-  type: string
+  type: QuestionTypeWire
   order: number
-  isFollowUp: boolean
-  acceptedFileType?: string
+  followUp: boolean
+  acceptedFileType?: AcceptedFileTypeWire
   requiredReadings?: number | null
   referencePointLabel?: string | null
   measurementUnit?: string | null
@@ -75,11 +62,11 @@ function mapSectionsToRequest(sections: Section[]): SectionRequest[] {
     questions:   (sec.questions ?? []).map((q, qi) => ({
       id:           q.id,
       questionText: q.questionText,
-      type:         q.type.toUpperCase(),
+      type:         QUESTION_TYPE_TO_WIRE[q.type],
       order:        q.order ?? qi + 1,
-      isFollowUp:   q.isFollowUp ?? false,
+      followUp:     q.followUp ?? false,
       ...(q.acceptedFileType
-        ? { acceptedFileType: q.acceptedFileType.toUpperCase() }
+        ? { acceptedFileType: ACCEPTED_FILE_TYPE_TO_WIRE[q.acceptedFileType] }
         : {}),
       ...(q.type === 'multi_measurement' ? {
         requiredReadings:    q.requiredReadings,
@@ -101,18 +88,35 @@ function mapSectionsToRequest(sections: Section[]): SectionRequest[] {
 // Raw question shape as it arrives from the backend (wire format).
 // `type` / `acceptedFileType` are UPPERCASE here and get normalised to
 // lowercase before the frontend sees them.
+//
+// Multi-measurement fields are declared in a couple of variants we
+// accept from the backend (camelCase, alt names, snake_case). Values
+// are resolved by `pickMultiMeasurement` below so downstream callers
+// always see `requiredReadings` / `referencePointLabel` / `measurementUnit`.
 interface QuestionResponse {
   id: string
   questionText: string
-  type: string
+  type: QuestionTypeWire
   order: number
-  isFollowUp?: boolean
   followUp?: boolean
-  acceptedFileType?: string | null
+  acceptedFileType?: AcceptedFileTypeWire | null
   options?: Option[] | null
   requiredReadings?: number | null
+  required_readings?: number | null
   referencePointLabel?: string | null
+  referenceLabel?: string | null
+  reference_point_label?: string | null
   measurementUnit?: string | null
+  measurement_unit?: string | null
+}
+
+function pickMultiMeasurement(q: QuestionResponse) {
+  return {
+    requiredReadings: q.requiredReadings ?? q.required_readings ?? null,
+    referencePointLabel:
+      q.referencePointLabel ?? q.referenceLabel ?? q.reference_point_label ?? null,
+    measurementUnit: q.measurementUnit ?? q.measurement_unit ?? null,
+  }
 }
 
 interface SectionResponse {
@@ -145,22 +149,21 @@ function mapResponseToTemplate(data: TemplateResponse): Template {
       id:        sec.id,
       name:      sec.name,
       order:     sec.order,
-      questions: (sec.questions ?? []).map((q): Question => ({
-        id:               q.id,
-        questionText:     q.questionText,
-        type:             q.type.toLowerCase() as QuestionType,
-        order:            q.order,
-        isFollowUp:       q.followUp ?? q.isFollowUp ?? false,
-        acceptedFileType: q.acceptedFileType
-          ? (q.acceptedFileType.toLowerCase() as AcceptedFileType)
-          : null,
-        options:          q.options ?? null,
-        ...(q.type.toLowerCase() === 'multi_measurement' ? {
-          requiredReadings:    q.requiredReadings ?? null,
-          referencePointLabel: q.referencePointLabel ?? null,
-          measurementUnit:     q.measurementUnit ?? null,
-        } : {}),
-      })),
+      questions: (sec.questions ?? []).map((q): Question => {
+        const type = QUESTION_TYPE_FROM_WIRE[q.type]
+        return {
+          id:               q.id,
+          questionText:     q.questionText,
+          type,
+          order:            q.order,
+          followUp:         q.followUp ?? false,
+          acceptedFileType: q.acceptedFileType
+            ? ACCEPTED_FILE_TYPE_FROM_WIRE[q.acceptedFileType]
+            : null,
+          options:          q.options ?? null,
+          ...(type === 'multi_measurement' ? pickMultiMeasurement(q) : {}),
+        }
+      }),
     })),
   }
 }
@@ -175,7 +178,7 @@ export async function createTemplate(template: Partial<Template> & { name: strin
       name:        template.name,
       description: "",
       version:     template.version ?? "1.0",
-      status:      mapStatus(template.status),
+      status:      template.status,
       createdAt:   template.createdAt ?? new Date().toISOString(),
       sections:    mapSectionsToRequest(template.sections ?? []),
     }),

@@ -34,13 +34,13 @@ export interface Measurement {
  * metadata (text + type) so the viewer can render it standalone.
  *
  * Only a subset of the value fields is populated for any given
- * answer — which subset depends on `questionType`.
+ * answer — which subset depends on `type`.
  */
 export interface QuestionAnswer {
   questionId: string;
   questionText: string;
   /** UPPERCASE wire format, e.g. `SINGLE_SELECT`, `MULTI_MEASUREMENT`. */
-  questionType: string;
+  type: string;
 
   // Scalar answers
   inputValue?: string | null;

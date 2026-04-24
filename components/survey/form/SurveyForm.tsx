@@ -1,10 +1,12 @@
 import { useState, useMemo, useCallback, useEffect } from "react"
 import { submitSurvey } from "@/services/surveyService"
 import { STATUS_CFG, completionOf } from "../common/shared"
+import { orderQuestionsForDisplay } from "@/components/templates/common/shared"
 import TextQuestion             from "./questions/TextQuestion"
 import SingleSelectQuestion     from "./questions/SingleSelectQuestion"
 import MultiSelectQuestion      from "./questions/MultiSelectQuestion"
 import FileQuestion             from "./questions/FileQuestion"
+import ImageQuestion            from "./questions/ImageQuestion"
 import GeoLocationQuestion      from "./questions/GeoLocationQuestion"
 import MultiMeasurementQuestion from "./questions/MultiMeasurementQuestion"
 import type { SiteSurvey } from "@/types/project"
@@ -87,7 +89,7 @@ export default function SurveyForm({ survey, template, onResponsesChange, onSubm
 
   const pct        = completionOf(template, responses)
   const currentSec = template.sections.find((s) => s.id === activeSection)
-  const secDone    = (sec: Section) => sec.questions.filter((q) => !q.isFollowUp).every((q) => isAnswered(responses[q.id], q))
+  const secDone    = (sec: Section) => sec.questions.filter((q) => !q.followUp).every((q) => isAnswered(responses[q.id], q))
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -139,17 +141,18 @@ export default function SurveyForm({ survey, template, onResponsesChange, onSubm
               {currentSec.name.includes(" - ") && <p style={{ fontSize: 12, color: "#94a3b8", margin: 0 }}>{currentSec.name.split(" - ")[1]}</p>}
             </div>
 
-            {currentSec.questions.map((q) => {
-              if (q.isFollowUp && !triggeredFollowUps.has(q.id)) return null
-              const isFollowUp = q.isFollowUp && triggeredFollowUps.has(q.id)
+            {orderQuestionsForDisplay(currentSec.questions).map((q) => {
+              if (q.followUp && !triggeredFollowUps.has(q.id)) return null
+              const isFollowUp = q.followUp && triggeredFollowUps.has(q.id)
               return (
                 <div key={q.id} style={{ padding: isFollowUp ? "14px 16px" : 0, borderRadius: isFollowUp ? 10 : 0, border: isFollowUp ? "1px solid #fde68a" : "none", background: isFollowUp ? "#fffbeb" : "transparent", marginLeft: isFollowUp ? 16 : 0 }}>
                   {isFollowUp && <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8 }}><Ms icon="subdirectory_arrow_right" style={{ fontSize: 14, color: "#f59e0b" }} /><span style={{ fontSize: 10, fontWeight: 600, color: "#b45309", textTransform: "uppercase", letterSpacing: "0.05em" }}>Follow-up</span></div>}
-                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#0f172a", marginBottom: 10 }}>{q.questionText}{!q.isFollowUp && <span style={{ color: "#ef4444", marginLeft: 2 }}>*</span>}</label>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#0f172a", marginBottom: 10 }}>{q.questionText}{!q.followUp && <span style={{ color: "#ef4444", marginLeft: 2 }}>*</span>}</label>
                   {q.type === "text"          && <TextQuestion         value={(responses[q.id] as string | undefined) ?? ''} onChange={v => setAnswer(q.id, v)} />}
                   {q.type === "single_select" && <SingleSelectQuestion question={q} value={(responses[q.id] as string | undefined) ?? ''} onChange={v => setAnswer(q.id, v)} />}
                   {q.type === "multi_select"  && <MultiSelectQuestion  question={q} value={(responses[q.id] as string[] | undefined) ?? []} onChange={v => setAnswer(q.id, v)} />}
                   {q.type === "file"          && <FileQuestion         value={(responses[q.id] as File[] | undefined) ?? []} onChange={v => setAnswer(q.id, v)} acceptedFileType={q.acceptedFileType} />}
+                  {q.type === "image"         && <ImageQuestion        value={(responses[q.id] as File[] | undefined) ?? []} onChange={v => setAnswer(q.id, v)} />}
                   {q.type === "geolocation"   && <GeoLocationQuestion  value={(responses[q.id] as GeoValue | undefined) ?? null} onChange={v => setAnswer(q.id, v)} />}
                   {q.type === "multi_measurement" && <MultiMeasurementQuestion question={q} value={(responses[q.id] as MultiMeasurementValue | undefined) ?? null} onChange={v => setAnswer(q.id, v)} />}
                 </div>

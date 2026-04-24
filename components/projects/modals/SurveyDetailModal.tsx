@@ -1,5 +1,6 @@
 import type { SiteSurvey } from '@/types/project';
 import Modal from '../common/Modal';
+import SurveyMapView from '@/components/survey/common/SurveyMapView';
 import {
   Ms,
   StatusBadge,
@@ -24,7 +25,7 @@ export default function SurveyDetailModal({
   return (
     <Modal
       title={survey.name}
-      subtitle={survey.id}
+      subtitle={`Site Survey ID: ${survey.id}`}
       onClose={onClose}
       maxWidth={480}
     >
@@ -128,15 +129,11 @@ export default function SurveyDetailModal({
                   gap: 8,
                 }}
               >
-                <span
-                  style={{
-                    fontFamily: 'monospace',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: '#0f172a',
-                  }}
-                >
-                  {survey.workOrder.number}
+                <span style={{ fontSize: 12, color: '#0f172a' }}>
+                  <span style={{ fontWeight: 500 }}>Work Order ID:</span>{' '}
+                  <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                    {survey.workOrder.number}
+                  </span>
                 </span>
                 <PriorityBadge priority={survey.workOrder.priority} />
               </div>
@@ -203,10 +200,17 @@ export default function SurveyDetailModal({
               >
                 {survey.location.address}
               </p>
-              <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
+              <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 12px' }}>
                 {survey.location.city}, {survey.location.state}{' '}
                 {survey.location.zip}
               </p>
+              {(survey.latitude || survey.location.latitude) && (
+                <SurveyMapView
+                  lat={Number(survey.latitude ?? survey.location.latitude)}
+                  lng={Number(survey.longitude ?? survey.location.longitude)}
+                  label={survey.name}
+                />
+              )}
             </>
           ) : (
             <p style={{ fontSize: 13, color: '#cbd5e1', margin: 0 }}>

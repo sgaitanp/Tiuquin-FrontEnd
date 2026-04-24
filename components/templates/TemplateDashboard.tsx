@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getTemplates, getTemplateById, createTemplate } from '@/services/templateService'
+import { getTemplates, getTemplateById } from '@/services/templateService'
 import type { Template, TemplateGroup } from '@/types/template'
 import { Ms }              from './common/shared'
 import TemplateList        from './panels/TemplateList'
@@ -23,11 +23,12 @@ function useMaterialSymbols() {
 export default function TemplateDashboard() {
   useMaterialSymbols()
 
-  const [groups,   setGroups]   = useState<TemplateGroup[]>([])
-  const [selected, setSelected] = useState<Template | null>(null)
-  const [search,   setSearch]   = useState('')
-  const [creating, setCreating] = useState(false)
-  const [loading,  setLoading]  = useState(true)
+  const [groups,        setGroups]        = useState<TemplateGroup[]>([])
+  const [selected,      setSelected]      = useState<Template | null>(null)
+  const [search,        setSearch]        = useState('')
+  const [creating,      setCreating]      = useState(false)
+  const [loading,       setLoading]       = useState(true)
+  const [localDraftIds, setLocalDraftIds] = useState<Set<string>>(new Set())
 
   const load = async () => {
     setLoading(true)
@@ -52,11 +53,54 @@ export default function TemplateDashboard() {
     setSelected(updated)
   }
 
-  const handleCreate = async (name: string) => {
-    const newT = await createTemplate({ name, status: 'IN_DESIGN' })
+  const handleLocalChange = (updated: Template) => {
+    setSelected(updated)
+    setGroups(gs => gs.map(g => {
+      if (g.groupId !== updated.groupId) return g
+      return {
+        ...g,
+        name: updated.name,
+        versions: g.versions.map(v => v.id === updated.id ? updated : v),
+      }
+    }))
+  }
+
+  const handleCreate = (name: string) => {
+    const id = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+      ? crypto.randomUUID()
+      : `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const draft: Template = {
+      id,
+      groupId:   id,
+      name,
+      version:   '1.0',
+      status:    'DRAFT',
+      createdAt: new Date().toISOString(),
+      sections:  [],
+    }
     setCreating(false)
-    await load()
-    setSelected(newT)
+    setGroups(gs => [
+      { groupId: draft.groupId, name: draft.name, versions: [draft] },
+      ...gs,
+    ])
+    setLocalDraftIds(ids => new Set(ids).add(draft.id))
+    setSelected(draft)
+  }
+
+  const handlePromoted = (oldId: string, created: Template) => {
+    setLocalDraftIds(ids => {
+      if (!ids.has(oldId)) return ids
+      const n = new Set(ids); n.delete(oldId); return n
+    })
+    setGroups(gs => gs.map(g => {
+      if (g.groupId !== oldId) return g
+      return {
+        groupId:  created.groupId,
+        name:     created.name,
+        versions: g.versions.map(v => v.id === oldId ? created : v),
+      }
+    }))
+    setSelected(created)
   }
 
   return (
@@ -102,6 +146,9 @@ export default function TemplateDashboard() {
             key={selected.id}
             template={selected}
             onUpdated={handleUpdated}
+            onChange={handleLocalChange}
+            isLocalDraft={localDraftIds.has(selected.id)}
+            onPromoted={handlePromoted}
           />
         )}
       </div>

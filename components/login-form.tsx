@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { setAuthSession } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -56,9 +57,7 @@ export function LoginForm({
         return;
       }
 
-      // Save token and user to sessionStorage
-      sessionStorage.setItem('token', data.token);
-      sessionStorage.setItem('currentUser', JSON.stringify(data.user));
+      setAuthSession({ token: data.token, user: data.user });
 
       router.push('/dashboard');
     } catch (e) {

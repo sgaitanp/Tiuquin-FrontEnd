@@ -79,13 +79,13 @@ export default function ProjectRow({
           </p>
           <p
             style={{
-              fontFamily: 'monospace',
               fontSize: 11,
               color: '#94a3b8',
               margin: 0,
             }}
           >
-            {project.id}
+            <span style={{ fontWeight: 500 }}>Project ID:</span>{' '}
+            <span style={{ fontFamily: 'monospace' }}>{project.id}</span>
           </p>
         </td>
         <td style={{ padding: '14px 16px', fontSize: 13, color: '#64748b' }}>
@@ -197,6 +197,27 @@ export default function ProjectRow({
           </div>
         </td>
       </tr>
+      {expanded && project.siteSurveys.length > 0 && (
+        <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
+          <td style={{ padding: '8px 8px 8px 20px' }} />
+          <td
+            colSpan={5}
+            style={{
+              padding: '8px 16px',
+              fontSize: 10,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              color: '#64748b',
+            }}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Ms icon="checklist" style={{ fontSize: 13, color: '#64748b' }} />
+              Site Surveys
+            </span>
+          </td>
+        </tr>
+      )}
       {expanded &&
         project.siteSurveys.map((s: SiteSurvey) => (
           <tr
@@ -223,13 +244,13 @@ export default function ProjectRow({
                   </p>
                   <p
                     style={{
-                      fontFamily: 'monospace',
                       fontSize: 11,
                       color: '#94a3b8',
                       margin: 0,
                     }}
                   >
-                    {s.id}
+                    <span style={{ fontWeight: 500 }}>Site Survey ID:</span>{' '}
+                    <span style={{ fontFamily: 'monospace' }}>{s.id}</span>
                   </p>
                 </div>
               </div>
